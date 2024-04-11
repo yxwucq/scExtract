@@ -1,0 +1,7 @@
+pypdf
+scanpy
+leidenalg
+tqdm
+anndata
+louvain
+pyfiglet
