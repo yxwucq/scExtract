@@ -1,5 +1,5 @@
 class Config:
-    API_KEY = 'YOUR_API_KEY' # available for OpenAI
+    API_KEY = 'YOUR_API_KEY'
     API_BASE_URL = "YOUR_API_BASE_URL" # available for OpenAI
     TYPE = "claude" # claude or openai
     MODEL = "claude-3-sonnet-20240229"
