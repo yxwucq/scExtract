@@ -6,6 +6,7 @@ import re
 class Params:
     def __init__(self):
         self.default_params = Config().DEFAULT_PARAMS
+        self.list_type_params = Config().LIST_TYPE_PARAMS
         self.params = deepcopy(self.default_params)
     
     @property
@@ -45,8 +46,11 @@ class Params:
             if len(lines) != 2:
                 continue
             elif lines[0].strip() in self.params:
+                if lines[0].strip() not in self.list_type_params:
                 # sometimes , is not trimmed in the value
-                self._update_params(lines[0].strip(), lines[1].split(',')[0].strip())
+                    self._update_params(lines[0].strip(), lines[1].split(',')[0].strip())
+                else:
+                    self._update_params(lines[0].strip(), lines[1].strip())
     
     def _update_params(self, key: str, value: str) -> None:
         if value in ['default', 'Default', 'DEFAULT']:
@@ -94,6 +98,14 @@ class Params:
                         self.params[key] = 'tsne'
                     else:
                         raise ValueError(f'Invalid Visualization method: {value}')
+            
+            # list parameters
+            elif key in self.list_type_params:
+                if value== '[]':
+                    self.params[key] = []
+                else:
+                    value = value.replace('[', '').replace(']', '').replace("'", "").split(',')
+                    self.params[key] = [item.strip() for item in value]
             
             else:
                 raise ValueError(f'Invalid key queried: {key}')

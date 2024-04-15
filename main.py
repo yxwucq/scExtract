@@ -1,11 +1,9 @@
 from auto_extract.auto_extract import auto_extract
+from utils.parse_args import parse_args
 
 def main():
-    adata_path = '/home/wu/datb1/AutoExtractSingleCell/raw_data/raw_data.h5ad'
-    pdf_path = '/home/wu/datb1/AutoExtractSingleCell/extracted_text.txt'
-    output_path = '/home/wu/datb1/AutoExtractSingleCell/processed_data'
-    
-    auto_extract(adata_path, pdf_path, output_path)
+    args = parse_args()
+    auto_extract(args.adata_path, args.pdf_path, args.output_dir, args.output_name)
     
 if __name__ == '__main__':
     main()

@@ -1,6 +1,10 @@
 class Config:
-    API_KEY = ''
-    API_BASE_URL = "https://api.claude-plus.top/v1"
+    API_KEY = 'YOUR_API_KEY' # available for OpenAI
+    API_BASE_URL = "YOUR_API_BASE_URL" # available for OpenAI
+    TYPE = "claude" # claude or openai
+    MODEL = "claude-3-sonnet-20240229"
+    
+    LIST_TYPE_PARAMS = ['genes_to_query']
     
     DEFAULT_PARAMS = {
         'filter_cells_low': 300,
@@ -9,7 +13,7 @@ class Config:
         'filter_total_counts_high': 100000,
         'filter_mito_percentage_low': 20,
         'filter_ribo_percentage_low': 50,
-        'batch_correction': False,
+        'batch_correction': True,
         'normalize_total_target_sum': 10000,
         'log1p_transform': True,
         'highly_variable_genes_num': 3000,
@@ -20,6 +24,9 @@ class Config:
         'unsupervised_cluster_method': 'leiden',
         'leiden_or_louvain_group_numbers': 10,
         'visualize_method': 'UMAP',
+        'reannotation': True,
+        'max_genes_to_query': 15,
+        'genes_to_query': [],
     }
     
     PROMPTS = {
@@ -79,9 +86,10 @@ class Config:
         
         'ANNOTATION_PROMPT': """This is the output of the top 10 marker genes for each cluster:
         
-        Based on gene expression and information from the article, annotate these clusters into cell types using a dictionary format.
+        Based on gene expression and the detailed discussion from the article, annotate these clusters into cell types using a dictionary format.
         Please provide the 'cell type', 'certainty', 'source', 'tissue', and reasoning for each cluster.
-        You may annotate different groups with the same cell type. Be sure to provide reasoning for the annotation.
+        You may annotate different groups with the same cell type, style of your annotations should but not forced to be concordant with
+        the original paper. You should assign a cell type(not expression pattern) to each cluster. Be sure to provide reasoning for the annotation.
         
         OUTPUT_FORMAT(description of the parameters is in the curly braces, do not include the description in the output,
                       each value in the [] should be quoted so that it is clear that it is a string value):
@@ -92,6 +100,32 @@ class Config:
                 ...}. "
                 
         reasoning: {str, reasoning for the annotation}""",
+        
+        'REVIEW_PROMPT': """To refine your annotation for cluster, you can decide a list of genes to query their expression raw dataset. 
+        These expression data should helps you decide your low confidence group annotation and increase certainty. Remind that:
+        1. You don't need to change your high-confident annotation in most cases
+        2. For those clusters you are unassure, you can query additional classical markers of the annotated cell type, 
+        based on your biological knowledge
+        3. The max length of the gene list is """ + str(DEFAULT_PARAMS['max_genes_to_query']) + """ If there is no need to query, please output empty list
+        
+        OUTPUT_FORMAT:
+        genes_to_query: list of genes to query, e.g. ['gene1', 'gene2', 'gene3', ...]
+        
+        reasoning: {str, reasoning for the genes to query}""",
+        
+        'REANNOTATION_PROMPT': """Based on the gene expression data queried and previous annotation, please re-annotate the clusters into cell types using a dictionary format.
+        Expression data is in the form of a dictionary, where the key is the gene name and the value is the expression level.
+        value is a list of expression level for each cluster, and the order is the same as the cluster number:
+    
+        OUTPUT_FORMAT(description of the parameters is in the curly braces, do not include the description in the output,
+                each value in the [] should be quoted so that it is clear that it is a string value):
+        annotation_dict: {0: [cell_type, 
+                certainty, (value chosen from [Low, Medium, High])
+                source, (value chosen from [Article-defined, Knowledge-based])
+                tissue], (value chosen from [Brain, Liver, Kidney, Heart, Lung...])
+                ...}. "
+                
+        reasoning: {str, reasoning for the re-annotation}""",
     }
     
     def __init__(self):

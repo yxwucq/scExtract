@@ -28,12 +28,6 @@ def filter(adata: ad.AnnData,
         adata = adata[adata.obs['pct_counts_mt'] < params['filter_mito_percentage_low'], :]
     if params['filter_ribo_percentage_low'] is not None:
         adata = adata[adata.obs['pct_counts_ribo'] < params['filter_ribo_percentage_low'], :]
-    
-    # Batch correction
-    if params['batch_correction']:
-        pass
-        # key is should be specified TODO
-        # sc.pp.combat(adata, key='sample')
         
     return adata
 
@@ -48,6 +42,11 @@ def preprocess(adata: ad.AnnData,
     # Log1p transform
     if params['log1p_transform']:
         sc.pp.log1p(adata)
+        
+    # Batch correction
+    if params['batch_correction']:
+        # key is should be specified TODO
+        sc.pp.combat(adata, key='Batch')
     
     # Highly variable genes
     sc.pp.highly_variable_genes(adata, n_top_genes=params['highly_variable_genes_num'])
@@ -76,9 +75,11 @@ def clustering(adata: ad.AnnData,
     elif params['unsupervised_cluster_method'] == 'louvain':
         clustering_key = 'louvain'
         clustering_method = sc.tl.louvain
-        
+    
+    # to accelerate the process
+    start_index = (params['leiden_or_louvain_group_numbers']-1) // 10
     # test resolution to meet the number of groups
-    for resolution in [0.1, 0.3, 0.5, 0.7, 0.9]:
+    for resolution in [0.1, 0.3, 0.5, 0.7, 0.9][start_index:]:
         clustering_method(adata, resolution=resolution)
         groups_num = len(adata.obs[clustering_key].unique())
         

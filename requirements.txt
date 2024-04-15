@@ -5,3 +5,5 @@ tqdm
 anndata
 louvain
 pyfiglet
+colorama
+mygene
