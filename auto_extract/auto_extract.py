@@ -114,6 +114,7 @@ def auto_extract(adata_path: str,
     if not params['reannotation']:
         adata = annotate(adata, annotation_dict, params, final=True)
     else:
+        # time.sleep(30)
         adata = annotate(adata, annotation_dict, params, final=False)
         logging.info(colored('6. Reannotating clusters', color='cyan', attrs=['bold']))
         query_response = claude_agent.chat(Config().get_prompt('REVIEW_PROMPT'))
@@ -122,11 +123,16 @@ def auto_extract(adata_path: str,
         if len(params['genes_to_query']) > 0:
             # query gene expression data
             query_genes_exp_dict = query_datasets(adata, params)
-            logging.info(colored('Gene expression data queried:' + str(query_genes_exp_dict), color='yellow'))
+            logging.info('Gene expression data queried:' + str(query_genes_exp_dict))
             if len(query_genes_exp_dict) > 0:
-                middle_start = 'and the order is the same as the cluster number:'
+                smmary_message = Config().get_tool_prompt('SUMMARY_QUERY_EXPRESSION')
+                smmary_message += str(query_genes_exp_dict)
+                query_genes_exp_dict_summary = claude_agent._tool_retrieve(messages=[{"role": "user", "content": smmary_message}])
+                logging.info(colored(query_genes_exp_dict_summary, color='yellow'))
+                middle_start = 're-annotate the clusters into cell types using a dictionary format:'
                 reannotate_prompt = Config().get_prompt('REANNOTATION_PROMPT').replace(f"{middle_start}", 
-                                                                                       f"{middle_start}\n{query_genes_exp_dict}")
+                                                                                       f"{middle_start}\n{query_genes_exp_dict_summary}")
+                # time.sleep(30)
                 reannotate_response = claude_agent.chat(reannotate_prompt, max_tokens=2000)
                 logging.info(reannotate_response)
                 reannotation_dict = params.parse_annotation_response(reannotate_response)

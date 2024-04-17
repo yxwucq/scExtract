@@ -7,3 +7,5 @@ louvain
 pyfiglet
 colorama
 mygene
+defusedxml
+oaklib

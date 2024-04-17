@@ -11,6 +11,7 @@ class BaseClient(ABC):
         self.api_key = Config().API_KEY
         self.api_base_url = Config().API_BASE_URL
         self.model = Config().MODEL
+        self.tool_model = Config().TOOL_MODEL
         self.messages = []
         
         self.pdf_path = pdf_path
@@ -69,6 +70,10 @@ class BaseClient(ABC):
     @abstractmethod
     def _retrieve(self):
         pass
+    
+    @abstractmethod
+    def _tool_retrieve(self):
+        pass
 
 class Openai(BaseClient):
     def __init__(self, pdf_path: str = None):
@@ -76,10 +81,10 @@ class Openai(BaseClient):
         self.create_client()
 
     def create_client(self):
-        self.client = OpenAI(api_key=self.api_key, api_base_url=self.api_base_url)
+        self.client = OpenAI(api_key=self.api_key, base_url=self.api_base_url)
 
     # add retrieve method   
-    def _retrieve(self, 
+    def _retrieve(self,
                  messages: list, 
                  max_tokens: int = 1000):
         
@@ -90,6 +95,18 @@ class Openai(BaseClient):
         )
         
         return completion.choices[0].message.content
+    
+    def _tool_retrieve(self,
+                       messages: list,
+                       max_tokens: int = 1000):
+            
+            completion = self.client.chat.completions.create(
+                model=self.tool_model,
+                messages=messages,
+                max_tokens=max_tokens
+            )
+            
+            return completion.choices[0].message.content
     
 class Claude3(BaseClient):
     def __init__(self, pdf_path: str = None):
@@ -111,6 +128,18 @@ class Claude3(BaseClient):
         )
         
         return completion.content[0].text
+    
+    def _tool_retrieve(self,
+                        messages: list,
+                        max_tokens: int = 1000):
+          
+          completion = self.client.messages.create(
+                model=self.tool_model,
+                messages=messages,
+                max_tokens=max_tokens
+          )
+          
+          return completion.content[0].text
 
     def update_messages(func):
         def wrapper(self, *args, **kwargs):
