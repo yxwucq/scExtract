@@ -1,8 +1,9 @@
 class Config:
     API_KEY = 'YOUR_API_KEY'
-    API_BASE_URL = "YOUR_API_BASE_URL" # available for OpenAI
-    TYPE = "claude" # claude or openai
-    MODEL = "claude-3-sonnet-20240229"
+    API_BASE_URL = "YOUR_API_BASE_URL" # for third party openai api
+    TYPE = "openai" # claude or openai
+    MODEL = "claude-3-sonnet-20240229" # model processing the article
+    TOOL_MODEL = "claude-3-opus-20240229" # model for short messages
     
     LIST_TYPE_PARAMS = ['genes_to_query']
     
@@ -88,8 +89,9 @@ class Config:
         
         Based on gene expression and the detailed discussion from the article, annotate these clusters into cell types using a dictionary format.
         Please provide the 'cell type', 'certainty', 'source', 'tissue', and reasoning for each cluster.
-        You may annotate different groups with the same cell type, style of your annotations should but not forced to be concordant with
-        the original paper. You should assign a cell type(not expression pattern) to each cluster. Be sure to provide reasoning for the annotation.
+        You may annotate different groups with the same cell type. You should try to assign a **cell ontology** label to each cluster (e.g. B cell, T cell, etc.),
+        with modification to make your annotations more concordant with the original paper  (e.g. 'CD4+ T cell' or 'T cell 2').
+        If you cannot tell the cell type, name it as 'Unknown'. Be sure to provide reasoning for the annotation.
         
         OUTPUT_FORMAT(description of the parameters is in the curly braces, do not include the description in the output,
                       each value in the [] should be quoted so that it is clear that it is a string value):
@@ -105,7 +107,7 @@ class Config:
         These expression data should helps you decide your low confidence group annotation and increase certainty. Remind that:
         1. You don't need to change your high-confident annotation in most cases
         2. For those clusters you are unassure, you can query additional classical markers of the annotated cell type, 
-        based on your biological knowledge
+        based on your biological knowledge. For those clusters you label as 'Unknown', you can query the most specific markers of remaining cell types.
         3. The max length of the gene list is """ + str(DEFAULT_PARAMS['max_genes_to_query']) + """ If there is no need to query, please output empty list
         
         OUTPUT_FORMAT:
@@ -113,9 +115,10 @@ class Config:
         
         reasoning: {str, reasoning for the genes to query}""",
         
-        'REANNOTATION_PROMPT': """Based on the gene expression data queried and previous annotation, please re-annotate the clusters into cell types using a dictionary format.
-        Expression data is in the form of a dictionary, where the key is the gene name and the value is the expression level.
-        value is a list of expression level for each cluster, and the order is the same as the cluster number:
+        'REANNOTATION_PROMPT': """Based on the gene expression data queried and previous annotation, please re-annotate the clusters into cell types using a dictionary format:
+    
+        If you are still unsure about the cell type, you can mark it as 'Unknown'. Be sure to provide reasoning for the re-annotation. You can also change
+        the previous annotation if you think it is necessary.
     
         OUTPUT_FORMAT(description of the parameters is in the curly braces, do not include the description in the output,
                 each value in the [] should be quoted so that it is clear that it is a string value):
@@ -128,11 +131,22 @@ class Config:
         reasoning: {str, reasoning for the re-annotation}""",
     }
     
+    TOOL_PROMPTS = {
+        'SUMMARY_QUERY_EXPRESSION': """This is the expression data of certain genes in a single-cell dataset, with the format {gene: [exp_in_cluster_i, ...]}.
+        Please indicate the expression level of each gene in cluster_i in order, and summarize their expression states, focusing on specific outlier expressions. 
+        For example: geneA: highest expression in cluster 0, not expressed in other clusters. geneB: not expressed in cluster 4, relatively high expression in cluster 2. 
+        Please directly output your summary by gene. """
+    }
+    
     def __init__(self):
         pass
     
     @classmethod
     def get_prompt(cls, prompt_name: str) -> str:
         return cls.PROMPTS[prompt_name]
+    
+    @classmethod
+    def TOOL_PROMPTS(cls, prompt_name: str) -> str:
+        return cls.TOOL_PROMPTS[prompt_name]
         
         
