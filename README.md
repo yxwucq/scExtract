@@ -5,13 +5,14 @@ scExtract is a tool for automating the extraction, processing, and annotation of
 ## Usage
 The input of the program are an anndata object and a PDF/txt file containing the article from which the single-cell data is to be extracted. 
 
-First fill your api provider(Claude3 and OpenAI models are both supported) in `auto_extract/config.py`:
+First copy `auto_extract/config_sample.py` to `auto_extract/config.py`, then fill your api provider(Claude3 and OpenAI models are both supported) in `auto_extract/config.py`:
 ```
 class Config:
     API_KEY = 'YOUR_API_KEY'
-    API_BASE_URL = "YOUR_API_BASE_URL" # available for OpenAI
-    TYPE = "claude" # claude or openai
-    MODEL = "claude-3-sonnet-20240229"
+    API_BASE_URL = "YOUR_API_BASE_URL" # for third party openai api
+    TYPE = "openai" # claude or openai
+    MODEL = "claude-3-sonnet-20240229" # model processing the article
+    TOOL_MODEL = "claude-3-opus-20240229" # model for short messages
 ```
 Then directly excute through `python main.py`:
 ```
@@ -39,3 +40,23 @@ The extraction follows these steps, the processing decisions/parameters are all 
 6. Reannotating clusters(Optional): Query the low-confidence annotations associated gene expression and reannotate them
 
 For detailed configuration, refer to `config.py`.
+
+## Benchmark
+
+run `benchmark_annotation` function in a style like `tests/benchmark_test.py`
+```
+adata_benchmark = benchmark_annotation(
+    adata=adata, # annotated dataset
+    true_group_key='cell_type', # manually labeled true value
+    predict_group_key='louvain', # cluster method in auto_annotation step
+    ontology='cl', # use cell ontology to benchmark
+    method='ols_api' # directly use ols_api from ebi
+)
+```
+The returned `adata_benchmark` contains `similarity` in the obs field.
+
+## Example
+### sample1
+Wang, S., Drummond, M.L., Guerrero-Juarez, C.F. et al. Single cell transcriptomics of human epidermis identifies basal stem cell transition states. Nat Commun 11, 4239 (2020). https://doi.org/10.1038/s41467-020-18075-7
+
+![sample1](src/sample1_benchmark.png)
