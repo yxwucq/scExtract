@@ -54,9 +54,6 @@ def annotate(adata: ad.AnnData,
     
     return adata
 
-import anndata as ad
-adata = ad.read_h5ad('/home/wu/datb1/AutoExtractSingleCell/raw_data/raw_data_batch.h5ad')
-
 def query_datasets(adata: ad.AnnData,
                    params: Params,
                    percision: int = 3, # Precision of the mean expression values
@@ -73,3 +70,19 @@ def query_datasets(adata: ad.AnnData,
         mean_expression_dict[gene] = [round(x, percision) for x in mean_expression_dict[gene]]
     
     return mean_expression_dict
+
+def simple_annotate(adata: ad.AnnData,
+                    annotation_dict: Dict[int, str],
+                    params: Params,
+                    key_added: str,
+                    ) -> ad.AnnData:
+    
+    cluster_key = params.get_params['unsupervised_cluster_method']
+    
+    if key_added in adata.obs.keys():
+        raise ValueError(f"{key_added} already exists in adata.obs.")
+    
+    adata.obs[key_added] = adata.obs[cluster_key].astype(int).map(annotation_dict)
+    adata.obs[key_added] = adata.obs[key_added].astype('category')
+    
+    return adata

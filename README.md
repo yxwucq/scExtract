@@ -16,20 +16,21 @@ class Config:
 ```
 Then directly excute through `python main.py`:
 ```
-usage: main.py [-h] --adata_path ADATA_PATH --pdf_path PDF_PATH [--output_dir OUTPUT_DIR] [--output_name OUTPUT_NAME]
+options:
+usage: main.py [-h] {auto_extract,benchmark,add_singler_annotation} ...
 
 Automatically extract, process, and annotate single-cell data from literature.
 
+positional arguments:
+  {auto_extract,benchmark,add_singler_annotation}
+                        sub-command help
+    auto_extract        Automatically extract, process, and annotate single-cell data from literature.
+    benchmark           Benchmark annotation results using true labels.
+    add_singler_annotation
+                        Annotate single-cell data using py&c++ implementation of singler.
+
 options:
   -h, --help            show this help message and exit
-  --adata_path ADATA_PATH, -i ADATA_PATH
-                        Path to the raw data in AnnData format.
-  --pdf_path PDF_PATH, -p PDF_PATH
-                        Path to the PDF file containing the article. should in pdf or txt format.
-  --output_dir OUTPUT_DIR, -d OUTPUT_DIR
-                        Directory to save the processed data.
-  --output_name OUTPUT_NAME, -o OUTPUT_NAME
-                        Name of the output file.
 ```
 The extraction follows these steps, the processing decisions/parameters are all article-based.
 1. Filter: Including Min_genes, Min_cells, Mitochondria_counts_percentage, etc.
@@ -41,19 +42,61 @@ The extraction follows these steps, the processing decisions/parameters are all 
 
 For detailed configuration, refer to `config.py`.
 
+## Other methods
+### singleR
+see `python main.py add_singler_annotation -h`
+```
+usage: main.py add_singler_annotation [-h] --adata_path ADATA_PATH [--output_path OUTPUT_PATH] [--ref_data REF_DATA] [--ref_features REF_FEATURES]
+                                      [--ref_labels REF_LABELS] [--cache_dir CACHE_DIR]
+
+options:
+  -h, --help            show this help message and exit
+  --adata_path ADATA_PATH, -i ADATA_PATH
+                        Path to the processed data in AnnData format.
+  --output_path OUTPUT_PATH, -o OUTPUT_PATH
+                        Path to save the output file. If not specified, the input file will be overwritten.
+  --ref_data REF_DATA, -d REF_DATA
+                        Reference data to use for annotation.
+  --ref_features REF_FEATURES, -f REF_FEATURES
+                        Reference features to use for annotation.
+  --ref_labels REF_LABELS, -l REF_LABELS
+                        Reference labels to use for annotation.
+  --cache_dir CACHE_DIR, -c CACHE_DIR
+                        Directory to save the cache files.
+```
+
+### LLM without article context
+In `python main.py auto_extract`, add `--benchmark_no_context_key`
+```
+--benchmark_no_context_key BENCHMARK_NO_CONTEXT_KEY, -b BENCHMARK_NO_CONTEXT_KEY
+                        If specified, Directly get annotation from marker genes without article context for benchmarking, the result will be saved in
+                        adata.obs[benchmark_no_context_key].
+```
+
 ## Benchmark
 
-run `benchmark_annotation` function in a style like `tests/benchmark_test.py`
+run ` python main.py benchmark` function
 ```
-adata_benchmark = benchmark_annotation(
-    adata=adata, # annotated dataset
-    true_group_key='cell_type', # manually labeled true value
-    predict_group_key='louvain', # cluster method in auto_annotation step
-    ontology='cl', # use cell ontology to benchmark
-    method='ols_api' # directly use ols_api from ebi
-)
+usage: main.py benchmark [-h] --adata_path ADATA_PATH [--output_path OUTPUT_PATH] --true_group_key TRUE_GROUP_KEY [--predict_group_key PREDICT_GROUP_KEY]
+                         [--ontology ONTOLOGY] [--method METHOD] [--similarity_key SIMILARITY_KEY]
+
+options:
+  -h, --help            show this help message and exit
+  --adata_path ADATA_PATH, -i ADATA_PATH
+                        Path to the processed data in AnnData format.
+  --output_path OUTPUT_PATH, -o OUTPUT_PATH
+                        Path to save the output file. If not specified, the input file will be overwritten.
+  --true_group_key TRUE_GROUP_KEY, -t TRUE_GROUP_KEY
+                        Key of the true group in adata.obs.
+  --predict_group_key PREDICT_GROUP_KEY, -p PREDICT_GROUP_KEY
+                        Key of the predicted group in adata.obs. Support multiple keys separated by comma.
+  --ontology ONTOLOGY, -l ONTOLOGY
+                        Ontology to use for annotation.
+  --method METHOD, -m METHOD
+                        Method to use for annotation.
+  --similarity_key SIMILARITY_KEY, -s SIMILARITY_KEY
+                        Key to save the similarity results. Support multiple keys separated by comma. Order should be the same as predict_group_key.
 ```
-The returned `adata_benchmark` contains `similarity` in the obs field.
 
 ## Example
 ### sample1

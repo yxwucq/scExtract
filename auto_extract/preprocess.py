@@ -10,8 +10,14 @@ def filter(adata: ad.AnnData,
            ) -> ad.AnnData:
 
     # Filter cells
-    if params['filter_cells_low'] is not None:
-        sc.pp.filter_cells(adata, min_genes=params['filter_cells_low'])
+    if params['filter_cells_min_genes'] is not None:
+        sc.pp.filter_cells(adata, min_genes=params['filter_cells_min_genes'])
+    if params['filter_cells_max_genes'] is not None:
+        sc.pp.filter_cells(adata, max_genes=params['filter_cells_max_genes'])
+    if params['filter_cells_min_counts'] is not None:
+        sc.pp.filter_cells(adata, min_counts=params['filter_cells_min_counts'])
+    if params['filter_cells_max_counts'] is not None:
+        sc.pp.filter_cells(adata, max_counts=params['filter_cells_max_counts'])
     if params['filter_genes_low'] is not None:
         sc.pp.filter_genes(adata, min_cells=params['filter_genes_low'])
     
@@ -20,10 +26,6 @@ def filter(adata: ad.AnnData,
     adata.var['ribo'] = adata.var_names.str.startswith(('RPL', 'RPS'))
     sc.pp.calculate_qc_metrics(adata, qc_vars=['mt', 'ribo'], percent_top=None, log1p=False, inplace=True)
     
-    if params['filter_n_gene_by_counts_high'] is not None:
-        adata = adata[adata.obs['n_genes_by_counts'] < params['filter_n_gene_by_counts_high'], :]
-    if params['filter_total_counts_high'] is not None:
-        adata = adata[adata.obs['total_counts'] < params['filter_total_counts_high'], :]
     if params['filter_mito_percentage_low'] is not None:
         adata = adata[adata.obs['pct_counts_mt'] < params['filter_mito_percentage_low'], :]
     if params['filter_ribo_percentage_low'] is not None:
@@ -34,6 +36,8 @@ def filter(adata: ad.AnnData,
 def preprocess(adata: ad.AnnData, 
                params: Params,
                ) -> ad.AnnData:
+    
+    adata.layers['counts'] = adata.X.copy()
     
     # Normalize total target sum
     if params['normalize_total_target_sum'] is not None:

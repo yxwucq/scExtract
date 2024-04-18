@@ -7,6 +7,9 @@ class Params:
     def __init__(self):
         self.default_params = Config().DEFAULT_PARAMS
         self.list_type_params = Config().LIST_TYPE_PARAMS
+        self.int_type_params = Config().INT_TYPE_PARAMS
+        self.bool_type_params = Config().BOOL_TYPE_PARAMS
+        self.categorical_params = Config().CATEGORICAL_PARAMS
         self.params = deepcopy(self.default_params)
     
     @property
@@ -16,7 +19,10 @@ class Params:
     def reset_params(self):
         self.params = deepcopy(self.default_params)
     
-    def parse_annotation_response(self, annotation_response: str) -> Dict[int, List[str]]:
+    def parse_annotation_response(self, 
+                                  annotation_response: str,
+                                  simple_annotation: bool = False,
+                                  ) -> Dict[int, List[str]|str]:
         annotation_response = annotation_response.replace('\n', '')
         annotation_dict = re.search(r'annotation_dict: {.*}', annotation_response)
         annotation_dict = annotation_dict.group(0).replace('annotation_dict: ', '')
@@ -24,17 +30,22 @@ class Params:
         try:
             annotation_dict = eval(annotation_dict)
         except: # sometimes the dictionary is not in the correct format
-            annotation_dict = annotation_dict.replace("{", "").replace("}", "").replace("'", "")
-            annotation_dict = annotation_dict + ','
-            annotation_list = annotation_dict.split('],')
-            annotation_dict = {}
-            for annotation in annotation_list:
-                if ':' not in annotation:
-                    continue
-                cluster = int(annotation.strip().split(':')[0].strip())
-                cluster_list = annotation.split('[')[1].split(',')
-                cluster_list = [item.strip() for item in cluster_list]
-                annotation_dict[cluster] = cluster_list
+            if not simple_annotation:
+                annotation_dict = annotation_dict.replace("{", "").replace("}", "").replace("'", "")
+                annotation_dict = annotation_dict + ','
+                annotation_list = annotation_dict.split('],')
+                annotation_dict = {}
+                for annotation in annotation_list:
+                    if ':' not in annotation:
+                        continue
+                    cluster = int(annotation.strip().split(':')[0].strip())
+                    cluster_list = annotation.split('[')[1].split(',')
+                    cluster_list = [item.strip() for item in cluster_list]
+                    annotation_dict[cluster] = cluster_list
+            else:
+                annotation_dict = annotation_dict.replace("{", "").replace("}", "").replace("'", "")
+                annotation_dict = annotation_dict.split(',')
+                annotation_dict = {int(item.split(':')[0].strip()): item.split(':')[1].strip() for item in annotation_dict}
         
         return annotation_dict
     
@@ -60,21 +71,13 @@ class Params:
             return
         else:
             # int parameters
-            if key in ['filter_cells_low', 'filter_genes_low', 'filter_n_gene_by_counts_high', 'filter_total_counts_high',
-                          'normalize_total_target_sum', 'highly_variable_genes_num', 'pca_comps', 'find_neighbors_neighbors_num',
-                            'find_neighbors_using_pcs', 'leiden_or_louvain_group_numbers']:
+            if key in self.int_type_params:
                 if not value.isdigit():
                     raise ValueError(f'Invalid value for {key}: {value}')
                 self.params[key] = int(value)
                 
-            # float parameters
-            elif key in ['filter_mito_percentage_low', 'filter_ribo_percentage_low']:
-                if not value.replace('.', '', 1).isdigit():
-                    raise ValueError(f'Invalid value for {key}: {value}')
-                self.params[key] = float(value)
-                
             # bool parameters
-            elif key in ['batch_correction', 'log1p_transform', 'scale']:
+            elif key in self.bool_type_params:
                 if value in ['True', 'true', 'TRUE']:
                     self.params[key] = True
                 elif value in ['False', 'false', 'FALSE']:
@@ -83,7 +86,7 @@ class Params:
                     raise ValueError(f'Invalid value for {key}: {value}')
                 
             # categorical parameters
-            elif key in ['unsupervised_cluster_method', 'visualize_method']:
+            elif key in self.categorical_params:
                 if key == 'unsupervised_cluster_method':
                     if value in ['louvain', 'Louvain', 'LOUVAIN']:
                         self.params[key] = 'louvain'

@@ -4,13 +4,14 @@ import os
 import warnings
 import time
 
+from typing import Optional
 from pyfiglet import Figlet
 import colorama
 from termcolor import colored
 
 from .claude3 import Claude3, Openai
 from .preprocess import filter, preprocess, clustering
-from .annotation import get_marker_genes, annotate, query_datasets
+from .annotation import get_marker_genes, annotate, query_datasets, simple_annotate
 from .parse_params import Params 
 from .config import Config
 
@@ -19,7 +20,9 @@ from utils.uitls import convert_ensembl_to_symbol
 def auto_extract(adata_path: str, 
                  pdf_path: str, 
                  output_dir: str,
-                 output_name: str = 'processed.h5ad') -> None:
+                 output_name: str = 'processed.h5ad',
+                 benchmark_no_context_key: Optional[str] = None,
+                 ) -> None:
     """
     Extracts and processes single-cell data from literature.
     """
@@ -101,6 +104,14 @@ def auto_extract(adata_path: str,
     adata, marker_genes = get_marker_genes(adata, params)
     logging.info(colored('Top 10 marker genes for each cluster:', color='yellow'))
     logging.info(colored(marker_genes, color='yellow'))
+    
+    if benchmark_no_context_key is not None:
+        benchmark_no_context_prompt = Config().get_tool_prompt('NO_CONTEXT_ANNOTATION_PROMPT').replace('Some can be a mixture of multiple cell types.',
+                                                                                        'Some can be a mixture of multiple cell types.' + str(marker_genes))
+        benchmark_no_context_summary = claude_agent._tool_retrieve(messages=[{"role": "user", "content": benchmark_no_context_prompt}])
+        logging.info(colored(benchmark_no_context_summary, color='green'))
+        no_context_annotation_dict = params.parse_annotation_response(benchmark_no_context_summary, simple_annotation=True)
+        adata = simple_annotate(adata, no_context_annotation_dict, params, benchmark_no_context_key)
     
     starting_part = 'This is the output of the top 10 marker genes for each cluster:'
     annotate_prompt = Config().get_prompt('ANNOTATION_PROMPT').replace(f"{starting_part}", 

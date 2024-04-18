@@ -9,3 +9,5 @@ colorama
 mygene
 defusedxml
 oaklib
+singler
+singlecellexperiment

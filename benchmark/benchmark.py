@@ -2,6 +2,7 @@ from typing import Optional, Tuple
 from oaklib import get_adapter
 from oaklib.datamodels.search import SearchConfiguration, SearchTermSyntax, SearchProperty
 
+import os
 import numpy as np
 import logging
 import anndata as ad
@@ -22,10 +23,16 @@ def request_ols(query_cell_type: str,
     Request OLS API for cell type information, return the first obo_id and label
     """
     
-    url = f"http://www.ebi.ac.uk/ols4/api/search?q={query_cell_type}&ontology={ontology}"
-    url += f"&queryFields={query_fields}"
-    url += f"&exact={exact}"
-    url += f"&rows={rows}"
+    query_cell_type = '+'.join(query_cell_type.split())
+    url = f"http://www.ebi.ac.uk/ols4/api/search?q={query_cell_type}&ontology={ontology}&isDefiningOntology=true"
+    
+    # default url performs better, which is strange
+    if query_fields != "label":
+        url += f"&queryFields={query_fields}"
+    if exact:
+        url += f"&exact={exact}"
+    if rows != 10:
+        url += f"&rows={rows}"
     
     s = requests.Session()
     retries = Retry(total=retries,
@@ -38,7 +45,9 @@ def request_ols(query_cell_type: str,
     results = resp.json()['response']['docs']
     
     if len(results) > 0:
-        return results[0]['obo_id'], results[0]['label']
+        for i in range(len(results)):
+            if results[i]['obo_id'].startswith(ontology.upper()):
+                return results[i]['obo_id'], results[i]['label']
     else:
         return None, None
 
@@ -63,12 +72,16 @@ def ontology_pairwise_similarity(obo_id1: Optional[str],
     
     return round(results['jaccard_similarity'], 3)  
 
-def benchmark_annotation(adata: ad.AnnData,
+def benchmark_annotation(adata_path : str,
                          true_group_key: str,
                          predict_group_key: str = None,
                          ontology: str = "cl",
                          method: str = "ols_api",
-                        ) -> ad.AnnData:
+                         similarity_key: str = "similarity",
+                         output_path: str = None
+                        ) -> None:
+    
+    adata = ad.read_h5ad(adata_path)
         
     if predict_group_key is None:
         if 'leiden' in adata.obs.keys() and 'louvain' in adata.obs.keys():
@@ -81,7 +94,7 @@ def benchmark_annotation(adata: ad.AnnData,
         else:
             raise ValueError("No clustering results found. \
                              Please specify the predict_group_key.")
-            
+    
     if method == "ols_api":
         request_func = request_ols
     elif method == "ols_ubergraph":
@@ -89,39 +102,50 @@ def benchmark_annotation(adata: ad.AnnData,
     else:
         raise ValueError("Unknown method.")
     
-    adata.obs[predict_group_key + '_cl_label'] = None
-    adata.obs[predict_group_key + '_cl_obo_id'] = None
-    adata.obs[true_group_key + '_cl_label'] = None
-    adata.obs[true_group_key + '_cl_obo_id'] = None
-    
-    predict_label_dict, predict_obo_dict = {}, {}
-    true_label_dict, true_obo_dict = {}, {}
-    
-    for cell_type in adata.obs[predict_group_key].unique():
-        obo_id, label = request_func(cell_type, ontology=ontology)
-        logging.info(f"Predicted: {cell_type}, Label: {label}, OBO ID: {obo_id}")
-        predict_label_dict[cell_type] = label
-        predict_obo_dict[cell_type] = obo_id
+    predict_group_key_list = predict_group_key.split(',')
+    similarity_key_list = similarity_key.split(',')
+
+    for predict_group_key, similarity_key in zip(predict_group_key_list, similarity_key_list):
+        logging.info(f"Processing Predict group key: {predict_group_key}, Add to Similarity key: {similarity_key}")
+        adata.obs[predict_group_key + '_cl_label'] = None
+        adata.obs[predict_group_key + '_cl_obo_id'] = None
+        adata.obs[true_group_key + '_cl_label'] = None
+        adata.obs[true_group_key + '_cl_obo_id'] = None
         
-    for cell_type in adata.obs[true_group_key].unique():
-        obo_id, label = request_func(cell_type, ontology=ontology)
-        logging.info(f"True: {cell_type}, Label: {label}, OBO ID: {obo_id}")
-        true_label_dict[cell_type] = label
-        true_obo_dict[cell_type] = obo_id
-    
-    adata.obs[predict_group_key + '_cl_label'] = adata.obs[predict_group_key].map(predict_label_dict)
-    adata.obs[predict_group_key + '_cl_obo_id'] = adata.obs[predict_group_key].map(predict_obo_dict)
-    adata.obs[true_group_key + '_cl_label'] = adata.obs[true_group_key].map(true_label_dict)
-    adata.obs[true_group_key + '_cl_obo_id'] = adata.obs[true_group_key].map(true_obo_dict)
-    
-    similarity_dict = {}
-    similarity_dict[(None, None)] = None
-    
-    for predict_cl in predict_obo_dict.values():
-        for true_cl in true_obo_dict.values():
-            similarity_dict[(predict_cl, true_cl)] = ontology_pairwise_similarity(predict_cl, true_cl, ontology)
+        predict_label_dict, predict_obo_dict = {}, {}
+        true_label_dict, true_obo_dict = {}, {}
+        
+        for cell_type in adata.obs[predict_group_key].unique():
+            obo_id, label = request_func(cell_type, ontology=ontology)
+            logging.info(f"Predicted: {cell_type}, Label: {label}, OBO ID: {obo_id}")
+            predict_label_dict[cell_type] = label
+            predict_obo_dict[cell_type] = obo_id
             
-    adata.obs['similarity'] = [similarity_dict[(x, y)] for x, y in zip(adata.obs[predict_group_key + '_cl_obo_id'], 
-                                                                      adata.obs[true_group_key + '_cl_obo_id'])]
+        for cell_type in adata.obs[true_group_key].unique():
+            obo_id, label = request_func(cell_type, ontology=ontology)
+            logging.info(f"True: {cell_type}, Label: {label}, OBO ID: {obo_id}")
+            true_label_dict[cell_type] = label
+            true_obo_dict[cell_type] = obo_id
+        
+        adata.obs[predict_group_key + '_cl_label'] = adata.obs[predict_group_key].map(predict_label_dict)
+        adata.obs[predict_group_key + '_cl_obo_id'] = adata.obs[predict_group_key].map(predict_obo_dict)
+        adata.obs[true_group_key + '_cl_label'] = adata.obs[true_group_key].map(true_label_dict)
+        adata.obs[true_group_key + '_cl_obo_id'] = adata.obs[true_group_key].map(true_obo_dict)
+        
+        similarity_dict = {}
+        similarity_dict[(None, None)] = None
+        
+        for predict_cl in predict_obo_dict.values():
+            for true_cl in true_obo_dict.values():
+                similarity_dict[(predict_cl, true_cl)] = ontology_pairwise_similarity(predict_cl, true_cl, ontology)
+                
+        adata.obs[similarity_key] = [similarity_dict[(x, y)] for x, y in zip(adata.obs[predict_group_key + '_cl_obo_id'], 
+                                                                        adata.obs[true_group_key + '_cl_obo_id'])]
     
-    return adata
+    for similarity_key in similarity_key_list:
+        logging.info(f"Similarity key: {similarity_key}, Mean: {np.mean(adata.obs[similarity_key])}")
+    
+    if output_path is not None:
+        adata.write(output_path)
+    else:
+        adata.write(adata_path)
