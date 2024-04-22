@@ -155,7 +155,7 @@ def auto_extract(adata_path: str,
                 
     # Save processed AnnData object
     logging.info(colored('Saving processed AnnData object', color='cyan', attrs=['bold']))
-    logging.info(f'Saving processed AnnData object to {output_dir}/{output_name}')
+    logging.info(f'Saving processed AnnData object to {os.path.join(output_dir,output_name)}')
     adata.write(os.path.join(output_dir, output_name))
 
     

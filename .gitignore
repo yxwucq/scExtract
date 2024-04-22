@@ -1,4 +1,5 @@
 */__pycache__/
 methods_comparison/_cache/
+_cache/
 tests/test_data/
 auto_extract/config.py

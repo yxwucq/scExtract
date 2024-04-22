@@ -42,6 +42,51 @@ The extraction follows these steps, the processing decisions/parameters are all 
 
 For detailed configuration, refer to `config.py`.
 
+## Benchmark
+
+For a whole process, including extract annotation, add other method, compare with ground truth for benchmarking, you can directly run
+`python pipelines.py sample{i}` in the following folder structure:
+
+```
+.
+├── processed_data
+│   └── sample{i}_true.h5ad # Contains `cell_type` col in obs for benchmarking
+└── raw_data
+    ├── sample{i}.pdf
+    └── sample{i}_raw.h5ad # Contains `Batch` col in obs for possible batch correction
+```
+
+### step-by-step
+
+run ` python main.py benchmark` function
+```
+usage: main.py benchmark [-h] --adata_path ADATA_PATH [--output_path OUTPUT_PATH] --true_group_key TRUE_GROUP_KEY [--predict_group_key PREDICT_GROUP_KEY]
+                         [--ontology ONTOLOGY] [--method METHOD] [--similarity_key SIMILARITY_KEY]
+
+options:
+  -h, --help            show this help message and exit
+  --adata_path ADATA_PATH, -i ADATA_PATH
+                        Path to the processed data in AnnData format.
+  --output_path OUTPUT_PATH, -o OUTPUT_PATH
+                        Path to save the output file. If not specified, the input file will be overwritten.
+  --true_group_key TRUE_GROUP_KEY, -t TRUE_GROUP_KEY
+                        Key of the true group in adata.obs.
+  --predict_group_key PREDICT_GROUP_KEY, -p PREDICT_GROUP_KEY
+                        Key of the predicted group in adata.obs. Support multiple keys separated by comma.
+  --ontology ONTOLOGY, -l ONTOLOGY
+                        Ontology to use for annotation.
+  --method METHOD, -m METHOD
+                        Method to use for annotation.
+  --similarity_key SIMILARITY_KEY, -s SIMILARITY_KEY
+                        Key to save the similarity results. Support multiple keys separated by comma. Order should be the same as predict_group_key.
+```
+
+## Example
+### sample1
+Wang, S., Drummond, M.L., Guerrero-Juarez, C.F. et al. Single cell transcriptomics of human epidermis identifies basal stem cell transition states. Nat Commun 11, 4239 (2020). https://doi.org/10.1038/s41467-020-18075-7
+
+![sample1](src/sample1_benchmark.png)
+
 ## Other methods
 ### singleR
 see `python main.py add_singler_annotation -h`
@@ -72,34 +117,3 @@ In `python main.py auto_extract`, add `--benchmark_no_context_key`
                         If specified, Directly get annotation from marker genes without article context for benchmarking, the result will be saved in
                         adata.obs[benchmark_no_context_key].
 ```
-
-## Benchmark
-
-run ` python main.py benchmark` function
-```
-usage: main.py benchmark [-h] --adata_path ADATA_PATH [--output_path OUTPUT_PATH] --true_group_key TRUE_GROUP_KEY [--predict_group_key PREDICT_GROUP_KEY]
-                         [--ontology ONTOLOGY] [--method METHOD] [--similarity_key SIMILARITY_KEY]
-
-options:
-  -h, --help            show this help message and exit
-  --adata_path ADATA_PATH, -i ADATA_PATH
-                        Path to the processed data in AnnData format.
-  --output_path OUTPUT_PATH, -o OUTPUT_PATH
-                        Path to save the output file. If not specified, the input file will be overwritten.
-  --true_group_key TRUE_GROUP_KEY, -t TRUE_GROUP_KEY
-                        Key of the true group in adata.obs.
-  --predict_group_key PREDICT_GROUP_KEY, -p PREDICT_GROUP_KEY
-                        Key of the predicted group in adata.obs. Support multiple keys separated by comma.
-  --ontology ONTOLOGY, -l ONTOLOGY
-                        Ontology to use for annotation.
-  --method METHOD, -m METHOD
-                        Method to use for annotation.
-  --similarity_key SIMILARITY_KEY, -s SIMILARITY_KEY
-                        Key to save the similarity results. Support multiple keys separated by comma. Order should be the same as predict_group_key.
-```
-
-## Example
-### sample1
-Wang, S., Drummond, M.L., Guerrero-Juarez, C.F. et al. Single cell transcriptomics of human epidermis identifies basal stem cell transition states. Nat Commun 11, 4239 (2020). https://doi.org/10.1038/s41467-020-18075-7
-
-![sample1](src/sample1_benchmark.png)

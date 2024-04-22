@@ -23,6 +23,10 @@ def request_ols(query_cell_type: str,
     Request OLS API for cell type information, return the first obo_id and label
     """
     
+    # remove plural to make the query more accurate
+    if query_cell_type.endswith('s'):
+        query_cell_type = query_cell_type[:-1]
+    
     query_cell_type = '+'.join(query_cell_type.split())
     url = f"http://www.ebi.ac.uk/ols4/api/search?q={query_cell_type}&ontology={ontology}&isDefiningOntology=true"
     
@@ -106,6 +110,14 @@ def benchmark_annotation(adata_path : str,
     similarity_key_list = similarity_key.split(',')
 
     for predict_group_key, similarity_key in zip(predict_group_key_list, similarity_key_list):
+        if predict_group_key == 'scextract':
+            if 'leiden' in adata.obs.keys():
+                predict_group_key = 'leiden'
+            elif 'louvain' in adata.obs.keys():
+                predict_group_key = 'louvain'
+            else:
+                raise ValueError("No clustering results found.")
+        
         logging.info(f"Processing Predict group key: {predict_group_key}, Add to Similarity key: {similarity_key}")
         adata.obs[predict_group_key + '_cl_label'] = None
         adata.obs[predict_group_key + '_cl_obo_id'] = None

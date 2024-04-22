@@ -72,7 +72,7 @@ class Config:
         OUTPUT_FORMAT(description of the parameters is after the colon, do not include the description in the output):
         normalize_total_target_sum: {int|default, usually default unless especially mentioned} 
         log1p_transform: {bool|default, mostly default unless especially mentioned}
-        batch_correction: {bool|default, whether to perform batch correction}
+        batch_correction: {bool|default, whether to perform batch correction, mostly default unless especially mentioned}
         highly_variable_genes_num: {int|default, mostly around 2k~3k} 
         scale(centralize): {bool|default, mostly default unless especially mentioned}
         pca_comps: {int|default, mostly default unless especially mentioned}
@@ -126,7 +126,7 @@ class Config:
         'REANNOTATION_PROMPT': """Based on the gene expression data queried and previous annotation, please re-annotate the clusters into cell types using a dictionary format:
     
         If you are still unsure about the cell type, you can mark it as 'Unknown'. Be sure to provide reasoning for the re-annotation. You can also change
-        the previous annotation if you think it is necessary.
+        the previous annotation if you think it is necessary, even if you are confident about the previous annotation.
     
         OUTPUT_FORMAT(description of the parameters is in the curly braces, do not include the description in the output,
                 each value in the [] should be quoted so that it is clear that it is a string value):

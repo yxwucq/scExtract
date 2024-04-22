@@ -1,4 +1,5 @@
 import scanpy as sc
+import pandas as pd
 import anndata as ad
 import warnings
 from typing import List, Dict
@@ -16,12 +17,13 @@ def get_marker_genes(adata: ad.AnnData,
     cluster_key = params.get_params['unsupervised_cluster_method']
     
     warnings.filterwarnings('ignore', category=RuntimeWarning)    
+    warnings.simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
     # use wilcoxon rank sum test to find differentially expressed genes
-    sc.tl.rank_genes_groups(adata, cluster_key, method='wilcoxon', n_genes=20, tie_correct=True, use_raw=True)
+    sc.tl.rank_genes_groups(adata, cluster_key, method='wilcoxon', n_genes=20, tie_correct=True, use_raw=False)
     
     marker_genes = {}
     for cluster in adata.obs[cluster_key].cat.categories:
-        marker_genes[cluster] = adata.uns['rank_genes_groups']['names'][cluster][:10]
+        marker_genes[cluster] = adata.uns['rank_genes_groups']['names'][cluster][:10].copy()
 
     return adata, marker_genes
     

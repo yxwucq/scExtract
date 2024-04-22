@@ -72,6 +72,9 @@ class Params:
         else:
             # int parameters
             if key in self.int_type_params:
+                if 'percentage' in key:
+                    if value.startswith('0.'):
+                        value = str(int(float(value) * 100))
                 if not value.isdigit():
                     raise ValueError(f'Invalid value for {key}: {value}')
                 self.params[key] = int(value)

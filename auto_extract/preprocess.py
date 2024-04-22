@@ -27,9 +27,9 @@ def filter(adata: ad.AnnData,
     sc.pp.calculate_qc_metrics(adata, qc_vars=['mt', 'ribo'], percent_top=None, log1p=False, inplace=True)
     
     if params['filter_mito_percentage_low'] is not None:
-        adata = adata[adata.obs['pct_counts_mt'] < params['filter_mito_percentage_low'], :]
+        adata = adata[adata.obs['pct_counts_mt'] < params['filter_mito_percentage_low'], :].copy()
     if params['filter_ribo_percentage_low'] is not None:
-        adata = adata[adata.obs['pct_counts_ribo'] < params['filter_ribo_percentage_low'], :]
+        adata = adata[adata.obs['pct_counts_ribo'] < params['filter_ribo_percentage_low'], :].copy()
         
     return adata
 
@@ -37,6 +37,7 @@ def preprocess(adata: ad.AnnData,
                params: Params,
                ) -> ad.AnnData:
     
+    adata = adata.copy() # avoid inplace modification
     adata.layers['counts'] = adata.X.copy()
     
     # Normalize total target sum
@@ -48,9 +49,9 @@ def preprocess(adata: ad.AnnData,
         sc.pp.log1p(adata)
         
     # Batch correction
-    if params['batch_correction']:
-        # key is should be specified TODO
-        sc.pp.combat(adata, key='Batch')
+    # if params['batch_correction']:
+    #     # key is should be specified TODO
+    #     sc.pp.combat(adata, key='Batch')
     
     # Highly variable genes
     sc.pp.highly_variable_genes(adata, n_top_genes=params['highly_variable_genes_num'])
@@ -60,11 +61,15 @@ def preprocess(adata: ad.AnnData,
         sc.pp.scale(adata)
     
     # PCA
-    sc.pp.pca(adata, n_comps=params['pca_comps'])
+    sc.pp.pca(adata, n_comps=max(params['pca_comps'], 60))
+    
+    # Batch correction scanorama
+    if params['batch_correction']:
+        sc.external.pp.harmony_integrate(adata, 'Batch')
         
     # Find neighbors
-    sc.pp.neighbors(adata, n_neighbors=params['find_neighbors_neighbors_num'], use_rep='X_pca',
-                    n_pcs=params['find_neighbors_using_pcs'])
+    use_rep = 'X_pca_harmony' if params['batch_correction'] else 'X_pca'
+    sc.pp.neighbors(adata, n_neighbors=params['find_neighbors_neighbors_num'], use_rep=use_rep, n_pcs=params['find_neighbors_using_pcs'])
     
     return adata
 
@@ -80,10 +85,8 @@ def clustering(adata: ad.AnnData,
         clustering_key = 'louvain'
         clustering_method = sc.tl.louvain
     
-    # to accelerate the process
-    start_index = (params['leiden_or_louvain_group_numbers']-1) // 10
     # test resolution to meet the number of groups
-    for resolution in [0.1, 0.3, 0.5, 0.7, 0.9][start_index:]:
+    for resolution in [0.1, 0.3, 0.5, 0.7, 0.9]:
         clustering_method(adata, resolution=resolution)
         groups_num = len(adata.obs[clustering_key].unique())
         
@@ -94,9 +97,10 @@ def clustering(adata: ad.AnnData,
             break
         
     # Visualize
+    use_rep = 'X_pca_harmony' if params['batch_correction'] else 'X_pca'
     if params['visualize_method'] == 'umap':
         sc.tl.umap(adata)
     elif params['visualize_method'] == 'tsne':
-        sc.tl.tsne(adata)
+        sc.tl.tsne(adata, use_rep=use_rep)
         
     return adata

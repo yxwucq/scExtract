@@ -68,14 +68,22 @@ def singler_annotation(h5file_path: str,
     mat = data.assay("counts")
     features = [str(x) for x in data.row_data["name"]]
 
-    results = singler.annotate_single(
-        mat,
-        features,
-        ref_data = ref_data,
-        ref_features = ref_features,
-        ref_labels = ref_labels,
-        cache_dir = cache_dir
-    )
+    # add retry if singler fails
+    for i in range(3):
+        try:
+            results = singler.annotate_single(
+                mat,
+                features,
+                ref_data = ref_data,
+                ref_features = ref_features,
+                ref_labels = ref_labels,
+                cache_dir = cache_dir,
+                num_threads = 4,
+            )
+            break
+        except:
+            if i == 2:
+                raise ValueError("Singler failed to annotate.")
 
     return results.column("best")
 
