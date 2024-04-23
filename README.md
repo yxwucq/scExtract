@@ -82,10 +82,15 @@ options:
 ```
 
 ## Example
-### sample1
-Wang, S., Drummond, M.L., Guerrero-Juarez, C.F. et al. Single cell transcriptomics of human epidermis identifies basal stem cell transition states. Nat Commun 11, 4239 (2020). https://doi.org/10.1038/s41467-020-18075-7
 
-![sample1](src/sample1_benchmark.png)
+![Similarity to author-defined cell type](src/similarity.png)
+
+### sample
+Muto, Y., Wilson, P.C., Ledru, N. et al. Single cell transcriptional and chromatin accessibility profiling redefine cellular heterogeneity in the adult human kidney. Nat Commun 12, 2190 (2021). https://doi.org/10.1038/s41467-021-22368-w
+
+`Cell_type` is author-defined cell type, `scExtract` is cell type extracted from scExtract, `no_context_anno` is cell type extracted without context information, `singler` is cell type from singleR. `Tissue`, `Certainty` are from scExtract.
+
+![sample8](src/sample8_benchmark.png)
 
 ## Other methods
 ### singleR

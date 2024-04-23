@@ -11,4 +11,4 @@ defusedxml
 oaklib
 singler
 singlecellexperiment
-scanorama
+harmonypy
