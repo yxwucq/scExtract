@@ -1,6 +1,7 @@
 from auto_extract.auto_extract import auto_extract
 from benchmark.benchmark import benchmark_annotation
 from methods_comparison.singler_anno import add_singler_annotation
+from integration.integrate import integrate_processed_datasets
 from utils.parse_args import parse_args
 
 def main():
@@ -28,6 +29,14 @@ def main():
                                ref_features=args.ref_features,
                                ref_labels=args.ref_labels,
                                cache_dir=args.cache_dir)
+    elif args.subcommand == 'integrate':
+        integrate_processed_datasets(file_list=args.file_list,
+                                     method=args.method,
+                                     output_path=args.output_path,
+                                     prior_weight=args.prior_weight,
+                                     prior_method=args.prior_method,
+                                     alignment_path=args.alignment_path,
+                                     embedding_dict_path=args.embedding_dict_path)
     
 if __name__ == '__main__':
     main()

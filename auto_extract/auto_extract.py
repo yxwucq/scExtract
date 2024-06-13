@@ -44,6 +44,9 @@ def auto_extract(adata_path: str,
 
     colorama.init()
 
+    logging.info(colored(f"Using {Config().MODEL} as extraction model", color='cyan'))
+    logging.info(colored(f"Using {Config().TOOL_MODEL} as tool model", color='cyan'))
+    
     # Load AnnData object
     logging.info(f'Loading AnnData object from {adata_path}')
     adata = ad.read_h5ad(adata_path)
@@ -99,6 +102,10 @@ def auto_extract(adata_path: str,
     logging.info(clustering_response)
     params.parse_response(clustering_response)
     adata = clustering(adata, params)
+    
+    if Config().CLEANUP:
+        logging.info(colored('Cleaning up intermediate messages', color='cyan', attrs=['bold']))
+        claude_agent.clear_intermediate_messages()
     
     # Annotate
     adata, marker_genes = get_marker_genes(adata, params)

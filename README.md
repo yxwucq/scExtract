@@ -1,4 +1,4 @@
-# scExtract: Automatic annotation of single-cell RNA-seq data from the literature
+# scExtract: Automatic annotation and integration of single-cell RNA-seq datasets from the literature
 
 scExtract is a tool for automating the extraction, processing, and annotation of single-cell data from literature. The tool is designed to use LLMs to extract relevant information from scientific articles and process the data.
 

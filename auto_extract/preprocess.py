@@ -1,4 +1,6 @@
 import scanpy as sc
+import numpy as np
+from scipy.sparse import csc_matrix
 import anndata as ad
 import warnings
 
@@ -8,6 +10,9 @@ from .parse_params import Params
 def filter(adata: ad.AnnData, 
            params: Params,
            ) -> ad.AnnData:
+
+    if type(adata.X) is np.ndarray: # possible nan value
+        adata.X = csc_matrix(np.nan_to_num(adata.X).copy())
 
     # Filter cells
     if params['filter_cells_min_genes'] is not None:
@@ -26,9 +31,9 @@ def filter(adata: ad.AnnData,
     adata.var['ribo'] = adata.var_names.str.startswith(('RPL', 'RPS'))
     sc.pp.calculate_qc_metrics(adata, qc_vars=['mt', 'ribo'], percent_top=None, log1p=False, inplace=True)
     
-    if params['filter_mito_percentage_low'] is not None:
+    if params['filter_mito_percentage_low'] is not None and adata.var['ribo'].sum() > 5: # at least 5 ribosomal genes
         adata = adata[adata.obs['pct_counts_mt'] < params['filter_mito_percentage_low'], :].copy()
-    if params['filter_ribo_percentage_low'] is not None:
+    if params['filter_ribo_percentage_low'] is not None and adata.var['mt'].sum() > 5: # at least 5 mitochondrial genes
         adata = adata[adata.obs['pct_counts_ribo'] < params['filter_ribo_percentage_low'], :].copy()
         
     return adata

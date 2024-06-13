@@ -1,4 +1,5 @@
 import anthropic
+import time
 from openai import OpenAI
 from pypdf import PdfReader
 from tqdm import tqdm
@@ -63,6 +64,13 @@ class BaseClient(ABC):
         
         return resp
     
+    def clear_intermediate_messages(self):
+        # only keep the system message, extract text message, response message
+        if len(self.messages) > 3:
+            self.messages = self.messages[:3]
+        else:
+            pass
+    
     @abstractmethod
     def create_client(self):
         pass
@@ -86,27 +94,55 @@ class Openai(BaseClient):
     # add retrieve method   
     def _retrieve(self,
                  messages: list, 
-                 max_tokens: int = 1000):
-        
-        completion = self.client.chat.completions.create(
-            model=self.model,
-            messages=messages,
-            max_tokens=max_tokens
-        )
+                 max_tokens: int = 1000,
+                 max_retries: int = 3
+                 ):
+
+        retry_times = 0
+        while retry_times < max_retries:
+            try:
+                completion = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                    max_tokens=max_tokens
+                )
+                break
+                
+            except Exception as e:
+                retry_times += 1
+                time.sleep(5*retry_times)
+                print(f"Error: {e}, retrying {retry_times} times")
+                if retry_times == max_retries:
+                    raise e
+                continue
         
         return completion.choices[0].message.content
     
     def _tool_retrieve(self,
                        messages: list,
-                       max_tokens: int = 1000):
+                       max_tokens: int = 1000,
+                       max_retries: int = 3
+                       ):
+        
+        retry_times = 0
+        while retry_times < max_retries:
+            try:
+                completion = self.client.chat.completions.create(
+                    model=self.tool_model,
+                    messages=messages,
+                    max_tokens=max_tokens
+                )
+                break
+                
+            except Exception as e:
+                time.sleep(5*retry_times)
+                retry_times += 1
+                print(f"Error: {e}, retrying {retry_times} times")
+                if retry_times == max_retries:
+                    raise e
+                continue
             
-            completion = self.client.chat.completions.create(
-                model=self.tool_model,
-                messages=messages,
-                max_tokens=max_tokens
-            )
-            
-            return completion.choices[0].message.content
+        return completion.choices[0].message.content
     
 class Claude3(BaseClient):
     def __init__(self, pdf_path: str = None):
@@ -119,27 +155,55 @@ class Claude3(BaseClient):
     # add retrieve method
     def _retrieve(self, 
                  messages: list, 
-                 max_tokens: int = 1000):
+                 max_tokens: int = 1000,
+                 max_retries: int = 3
+                 ):
         
-        completion = self.client.messages.create(
-            model=self.model,
-            messages=messages,
-            max_tokens=max_tokens
-        )
+        retry_times = 0
+        while retry_times < max_retries:
+            try:
+                completion = self.client.messages.create(
+                    model=self.model,
+                    messages=messages,
+                    max_tokens=max_tokens
+                )
+                break
+                
+            except Exception as e:
+                time.sleep(5*retry_times)
+                retry_times += 1
+                print(f"Error: {e}, retrying {retry_times} times")
+                if retry_times == max_retries:
+                    raise e
+                continue
         
         return completion.content[0].text
     
     def _tool_retrieve(self,
                         messages: list,
-                        max_tokens: int = 1000):
+                        max_tokens: int = 1000,
+                        max_retries: int = 3
+                        ):
           
-          completion = self.client.messages.create(
-                model=self.tool_model,
-                messages=messages,
-                max_tokens=max_tokens
-          )
-          
-          return completion.content[0].text
+        retry_times = 0
+        while retry_times < max_retries:
+            try:
+                completion = self.client.messages.create(
+                    model=self.tool_model,
+                    messages=messages,
+                    max_tokens=max_tokens
+                )
+                break
+                
+            except Exception as e:
+                retry_times += 1
+                time.sleep(5*retry_times)
+                print(f"Error: {e}, retrying {retry_times} times")
+                if retry_times == max_retries:
+                    raise e
+                continue
+        
+        return completion.content[0].text
 
     def update_messages(func):
         def wrapper(self, *args, **kwargs):

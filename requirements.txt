@@ -12,3 +12,7 @@ oaklib
 singler
 singlecellexperiment
 harmonypy
+cellhint
+anthropic
+openai
+termcolor
