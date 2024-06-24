@@ -236,13 +236,29 @@ def get_cell_type_embedding_by_llm(cell_types: List[str]) -> List[np.ndarray]:
     """
     Get cell type embeddings by using the OpenAI API.
     """
+    
     embedding_api_key = Config().EMBEDDING_API_KEY
     azure_endpoint = Config().EMBEDDING_ENDPOINT
-    client = AzureOpenAI(
-    api_key=embedding_api_key, api_version="2024-02-01", azure_endpoint=azure_endpoint
-    )
-    response = client.embeddings.create(
-        model=Config().EMBEDDING_MODEL, input=cell_types
-    )
-    emb = [x.embedding for x in response.data]
+    
+    if Config().API_STYLES == 'same':
+        if 'openai' in Config().TYPE:
+            agent = Openai()
+        elif 'claude' in Config().TYPE:
+            agent = Claude3()
+        
+        emb = [agent.embeddings.create(input = [x], model=Config().EMBEDDING_MODEL).data[0].embedding for x in cell_types]
+    
+    elif Config().API_STYLES == 'azure':
+        client = AzureOpenAI(
+        api_key=embedding_api_key, api_version="2024-02-01", azure_endpoint=azure_endpoint
+        )
+        response = client.embeddings.create(
+            model=Config().EMBEDDING_MODEL, input=cell_types
+        )
+        emb = [x.embedding for x in response.data]
+    
+    elif Config().API_STYLES == 'openai':
+        client = OpenAI(api_key=embedding_api_key, base_url=azure_endpoint)
+        emb = [agent.embeddings.create(input = [x], model=Config().EMBEDDING_MODEL).data[0].embedding for x in cell_types]
+    
     return emb

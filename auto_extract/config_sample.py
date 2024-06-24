@@ -6,6 +6,7 @@ class Config:
     TOOL_MODEL = 'claude-3-5-sonnet-20240620'
     
     # embedding model
+    CONVERT_EMBEDDING = True # Whether to convert the cell type, tissue, and disease to embeddings
     EMBEDDING_MODEL = 'text-embedding-3-large'
     # embedding api key
     EMBEDDING_API_KEY = ''
@@ -14,7 +15,6 @@ class Config:
     
     # Options
     CLEANUP = True # Whether to clean up the intermediate messages before annotating to save tokens
-    CONVERT_EMBEDDING = True # Whether to convert the cell type, tissue, and disease to embeddings
     
     # Parameters
     LIST_TYPE_PARAMS = ['genes_to_query']

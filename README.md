@@ -6,6 +6,7 @@ scExtract is a tool for automating the extraction, processing, and annotation of
 The input of the program are an anndata object and a PDF/txt file containing the article from which the single-cell data is to be extracted. 
 
 First copy `auto_extract/config_sample.py` to `auto_extract/config.py`, then fill your api provider(Claude3 and OpenAI models are both supported) in `auto_extract/config.py`:
+
 ```
 class Config:
     API_KEY = 'YOUR_API_KEY'
@@ -14,24 +15,35 @@ class Config:
     MODEL = "claude-3-sonnet-20240229" # model processing the article
     TOOL_MODEL = "claude-3-opus-20240229" # model for short messages
 ```
-Then directly excute through `python main.py`:
+
+If you want to benchmark auto-annotation using similarity of annotated-text or later integrate your datasets, you need convert annotation to embedding using LLM, by setting `CONVERT_EMBEDDING = True` in `config.py`:
+
 ```
-options:
-usage: main.py [-h] {auto_extract,benchmark,add_singler_annotation} ...
-
-Automatically extract, process, and annotate single-cell data from literature.
-
-positional arguments:
-  {auto_extract,benchmark,add_singler_annotation}
-                        sub-command help
-    auto_extract        Automatically extract, process, and annotate single-cell data from literature.
-    benchmark           Benchmark annotation results using true labels.
-    add_singler_annotation
-                        Annotate single-cell data using py&c++ implementation of singler.
-
-options:
-  -h, --help            show this help message and exit
+class Config:
+    ...
+    CONVERT_EMBEDDING = True
+    EMBEDDING_MODEL = 'text-embedding-3-large'
+    API_STYLES = '' # values from ['azure', 'same', 'openai']
+    EMBEDDING_API_KEY = ''
+    EMBEDDING_ENDPOINT = ''
 ```
+
+If you using GPTs for text extraction, you can set `API_STYLES = same` to use same setting. But there are no official text-to-embedding model in Claudes, you can set `API_STYLES = azure|openai` and according api key and endpoint to use Openai t2e model while using Claudes for text extraction.
+
+Then directly excute through `python main.py `
+
+### Annotate
+
+Using `auto_extract` subcommand.
+
+```
+python main.py auto_extract \
+    -i ADATA_PATH \
+    -p PDF_PATH \
+    -d OUTPUT_DIR \
+    -o OUTPUT_NAME
+```
+
 The extraction follows these steps, the processing decisions/parameters are all article-based.
 1. Filter: Including Min_genes, Min_cells, Mitochondria_counts_percentage, etc.
 2. Preprocess: Including Normalization, Log1p_transform, Highly_variable_genes_selection, etc.
@@ -42,7 +54,7 @@ The extraction follows these steps, the processing decisions/parameters are all 
 
 For detailed configuration, refer to `config.py`.
 
-## Benchmark
+### Benchmark
 
 For a whole process, including extract annotation, add other method, compare with ground truth for benchmarking, you can directly run
 `python pipelines.py sample{i}` in the following folder structure:
@@ -56,29 +68,25 @@ For a whole process, including extract annotation, add other method, compare wit
     └── sample{i}_raw.h5ad # Contains `Batch` col in obs for possible batch correction
 ```
 
-### step-by-step
+### Integration
 
-run ` python main.py benchmark` function
+Using `integrate` subcommand.
+
 ```
-usage: main.py benchmark [-h] --adata_path ADATA_PATH [--output_path OUTPUT_PATH] --true_group_key TRUE_GROUP_KEY [--predict_group_key PREDICT_GROUP_KEY]
-                         [--ontology ONTOLOGY] [--method METHOD] [--similarity_key SIMILARITY_KEY]
+python main.py integrate \
+    -f FILE_LIST \
+    -m scExtract Method to use for integration. Support scExtract and cellhint. \
+    --prior_method llm Method to use for creating the prior similarity matrix. Support ontology, llm and local.
+```
 
-options:
-  -h, --help            show this help message and exit
-  --adata_path ADATA_PATH, -i ADATA_PATH
-                        Path to the processed data in AnnData format.
-  --output_path OUTPUT_PATH, -o OUTPUT_PATH
-                        Path to save the output file. If not specified, the input file will be overwritten.
-  --true_group_key TRUE_GROUP_KEY, -t TRUE_GROUP_KEY
-                        Key of the true group in adata.obs.
-  --predict_group_key PREDICT_GROUP_KEY, -p PREDICT_GROUP_KEY
-                        Key of the predicted group in adata.obs. Support multiple keys separated by comma.
-  --ontology ONTOLOGY, -l ONTOLOGY
-                        Ontology to use for annotation.
-  --method METHOD, -m METHOD
-                        Method to use for annotation.
-  --similarity_key SIMILARITY_KEY, -s SIMILARITY_KEY
-                        Key to save the similarity results. Support multiple keys separated by comma. Order should be the same as predict_group_key.
+For large dataset computed on HPC without internet, you can first generate text embedding by individual dataset using `python integration/extract_celltype_embedding.py`. Then integrate using local provided dict object:
+
+```
+python main.py integrate \
+    -f FILE_LIST \
+    -m scExtract Method to use for integration. Support scExtract and cellhint. \
+    --prior_method local \
+    --embedding_dict_path EMBEDDING_DICT_PATH Path to the cell type embedding dictionary.
 ```
 
 ## Example
