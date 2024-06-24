@@ -8,7 +8,9 @@ def parse_args():
     
     auto_extract_parser.add_argument('--adata_path', '-i', type=str, required=True, help='Path to the raw data in AnnData format.')
     auto_extract_parser.add_argument('--pdf_path', '-p', type=str, required=True, help='Path to the PDF file containing the article. should in pdf or txt format.')
-    auto_extract_parser.add_argument('--output_dir', '-d', type=str, default='ExtractedData', help='Directory to save the processed data.')
+    auto_extract_parser.add_argument('--output_dir', '-d', type=str, default='Processed', help='Directory to save the processed data.')
+    auto_extract_parser.add_argument('--output_config_pkl', '-c', type=str, default='config.pkl', help='Name of the output config file.')
+    auto_extract_parser.add_argument('--output_log', '-l', type=str, default='auto_extract.log', help='Name of the output log file.')
     auto_extract_parser.add_argument('--output_name', '-o', type=str, default='processed.h5ad', help='Name of the output file.')
     auto_extract_parser.add_argument('--benchmark_no_context_key', '-b', type=str, default=None, help='If specified, Directly get annotation from marker genes without article context for benchmarking, \
                                     the result will be saved in adata.obs[benchmark_no_context_key].')
@@ -17,6 +19,7 @@ def parse_args():
     
     benchmark_parser.add_argument('--adata_path', '-i', type=str, required=True, help='Path to the processed data in AnnData format.')
     benchmark_parser.add_argument('--output_path', '-o', type=str, help='Path to save the output file. If not specified, the input file will be overwritten.')
+    benchmark_parser.add_argument('--result_metrics_path', '-r', type=str, help='Path to save the metrics of the benchmark results.')
     benchmark_parser.add_argument('--true_group_key', '-t', type=str, required=True, help='Key of the true group in adata.obs.')
     benchmark_parser.add_argument('--predict_group_key', '-p', type=str, help='Key of the predicted group in adata.obs. Support multiple keys separated by comma.')
     benchmark_parser.add_argument('--ontology', '-l', type=str, default='cl', help='Ontology to use for annotation.')
@@ -31,6 +34,7 @@ def parse_args():
     add_singler_annotation.add_argument('--ref_features', '-f', type=str, default='symbol', help='Reference features to use for annotation.')
     add_singler_annotation.add_argument('--ref_labels', '-l', type=str, default='main', help='Reference labels to use for annotation.')
     add_singler_annotation.add_argument('--cache_dir', '-c', type=str, default='_cache', help='Directory to save the cache files.')
+    add_singler_annotation.add_argument('--key_added', '-k', type=str, default='singler_annotation', help='Key to save the annotation results in adata.obs.')
 
     integrate_parser = subparsers.add_parser('integrate', help='Integrate multiple processed datasets.')
     

@@ -1,9 +1,11 @@
 import anthropic
 import time
-from openai import OpenAI
+from openai import AzureOpenAI, OpenAI
 from pypdf import PdfReader
 from tqdm import tqdm
 from abc import ABC, abstractmethod
+from typing import List
+import numpy as np
 
 from .config import Config
 
@@ -229,3 +231,18 @@ class Claude3(BaseClient):
         resp = self._retrieve(self.messages)
         
         return resp
+    
+def get_cell_type_embedding_by_llm(cell_types: List[str]) -> List[np.ndarray]:
+    """
+    Get cell type embeddings by using the OpenAI API.
+    """
+    embedding_api_key = Config().EMBEDDING_API_KEY
+    azure_endpoint = Config().EMBEDDING_ENDPOINT
+    client = AzureOpenAI(
+    api_key=embedding_api_key, api_version="2024-02-01", azure_endpoint=azure_endpoint
+    )
+    response = client.embeddings.create(
+        model=Config().EMBEDDING_MODEL, input=cell_types
+    )
+    emb = [x.embedding for x in response.data]
+    return emb

@@ -1,10 +1,22 @@
 class Config:
-    API_KEY = 'YOUR_API_KEY'
-    API_BASE_URL = "YOUR_API_BASE_URL" # for third party openai api
-    TYPE = "openai" # claude or openai
-    MODEL = "claude-3-sonnet-20240229" # model processing the article
-    TOOL_MODEL = "claude-3-opus-20240229" # model for short messages
+    API_KEY = ''
+    API_BASE_URL = ''
+    TYPE = "openai"
+    MODEL = 'claude-3-5-sonnet-20240620'
+    TOOL_MODEL = 'claude-3-5-sonnet-20240620'
     
+    # embedding model
+    EMBEDDING_MODEL = 'text-embedding-3-large'
+    # embedding api key
+    EMBEDDING_API_KEY = ''
+    # embedding endpoint
+    EMBEDDING_ENDPOINT = 'https://genomic-openai-ca.openai.azure.com/'
+    
+    # Options
+    CLEANUP = True # Whether to clean up the intermediate messages before annotating to save tokens
+    CONVERT_EMBEDDING = True # Whether to convert the cell type, tissue, and disease to embeddings
+    
+    # Parameters
     LIST_TYPE_PARAMS = ['genes_to_query']
     INT_TYPE_PARAMS = ['filter_cells_min_genes', 'filter_cells_max_genes', 'filter_cells_min_counts', 'filter_cells_max_counts',
                           'filter_genes_low', 'filter_mito_percentage_low', 'filter_ribo_percentage_low',
@@ -61,7 +73,20 @@ class Config:
         filter_mito_percentage_low: {int|default|null, maximum mitochondrial gene percentage (0,100)}
         filter_ribo_percentage_low: {int|null, maximum ribosomal gene percentage (0,100)}
         
-        reasoning: {str, reasoning for the filtering parameters}""",
+        reasoning: {str, reasoning for the filtering parameters}
+        
+        This is an example of how to extract filter_cells_min_genes, other arguments are extracted in the same way：
+        <example>
+        <text>
+        We filter out cells expressing fewer than 300 genes
+        </text>
+        The output should be:
+        <response>
+        filter_cells_min_genes: 300
+        
+        reasoning: The article mentions that 'We filter out cells expressing fewer than 300 genes'
+        </response>
+        </example>""",
         
         'PREPROCESSING_PROMPT': """Continuing with the processing workflow described in the article 
         for single-cell datasets, replace the placeholders {} in the following preprocessing 
@@ -79,7 +104,18 @@ class Config:
         find_neighbors_neighbors_num: {int|default, usually default}
         find_neighbors_using_pcs: {int|default, usually default}
         
-        reasoning: {str, reasoning for the preprocessing parameters}""",
+        reasoning: {str, reasoning for the preprocessing parameters}
+        
+        This is an example of how to extract highly_variable_genes_num, other arguments are extracted in the same way：
+        <example>
+        <text>
+        We use function FindVariableFeatures to identify 2000 highly variable genes
+        </text>
+        The output should be:
+        <response>
+        highly_variable_genes_num: 2000
+        </response>
+        </example>""",
         
         'CLUSTERING_PROMPT': """Now, moving on to the crucial step of cell clustering and annotation. 
         Based on your understanding of the complexity of dataset clustering in the article, 
@@ -87,8 +123,8 @@ class Config:
         Be sure to provide reasoning for the clustering parameters.
 
         OUTPUT_FORMAT(description of the parameters is after the colon, do not include the description in the output):
-        unsupervised_cluster_method: {str: leiden or louvain}
-        leiden_or_louvain_group_numbers: {int, depends on the complexity of the dataset}
+        unsupervised_cluster_method: {str, choose from leiden | louvain}
+        leiden_or_louvain_group_numbers: {int, depends on the complexity of the datasetm, you can infer the number from the article if not mentioned}
         visualize_method: {str: UMAP or t-SNE, only choose one for visualization}
         
         reasoning: {str, reasoning for the clustering parameters}""",
@@ -102,14 +138,25 @@ class Config:
         If you cannot tell the cell type, name it as 'Unknown'. Be sure to provide reasoning for the annotation.
         
         OUTPUT_FORMAT(description of the parameters is in the curly braces, do not include the description in the output,
-                      each value in the [] should be quoted so that it is clear that it is a string value):
+                each value in the [] should be quoted so that it is clear that it is a string value):
         annotation_dict: {0: [cell_type, 
                 certainty, (value chosen from [Low, Medium, High])
                 source, (value chosen from [Article-defined, Knowledge-based])
-                tissue], (value chosen from [Brain, Liver, Kidney, Heart, Lung...])
+                tissue, (value chosen from [Brain, Liver, Kidney, Heart, Lung...])
+                disease, (value chosen from [Healthy, Cancer, Alzheimer, Parkinson...])
+                developmental_stage], (value chosen from [Embryonic, Fetal, Neonatal, Adult...])
                 ...}. "
                 
-        reasoning: {str, reasoning for the annotation}""",
+        reasoning: {str, reasoning for the re-annotation}
+        
+        <example>
+        <response>
+        annotation_dict: {0: ['T cell', 'High', 'Article-defined', 'Blood', 'Healthy', 'Adult'],
+                            1: ['B cell', 'Medium', 'Knowledge-based', 'Blood', 'Healthy', 'Adult']}
+                            
+        reasoning: The expression of CD3E and CD3D is high in cluster 0, which is a typical marker of T cells. The expression of CD19 is medium high in cluster 1, which is a typical marker of B cells, but not as high as in cluster 2
+        </response>
+        </example>""",
         
         'REVIEW_PROMPT': """To refine your annotation for cluster, you can decide a list of genes to query their expression raw dataset. 
         These expression data should helps you decide your low confidence group annotation and increase certainty. Remind that:
@@ -121,22 +168,41 @@ class Config:
         OUTPUT_FORMAT:
         genes_to_query: list of genes to query, e.g. ['gene1', 'gene2', 'gene3', ...]
         
-        reasoning: {str, reasoning for the genes to query}""",
+        reasoning: {str, reasoning for the genes to query}
+        
+        <example>
+        <response>
+        genes_to_query: ['CD8A', 'CD14', 'CD34']
+
+        reasoning: These genes are classical markers for CD8+ T cells, monocytes/macrophages, and hematopoietic stem cells, respectively. Querying their expression levels can help refine the annotation of clusters showing ambiguous marker profiles, such as Cluster 2 labeled as 'Unknown'.
+        </response>
+        </example>""",
         
         'REANNOTATION_PROMPT': """Based on the gene expression data queried and previous annotation, please re-annotate the clusters into cell types using a dictionary format:
     
         If you are still unsure about the cell type, you can mark it as 'Unknown'. Be sure to provide reasoning for the re-annotation. You can also change
-        the previous annotation if you think it is necessary, even if you are confident about the previous annotation.
+        the previous annotation if you think it is necessary.
     
         OUTPUT_FORMAT(description of the parameters is in the curly braces, do not include the description in the output,
                 each value in the [] should be quoted so that it is clear that it is a string value):
         annotation_dict: {0: [cell_type, 
                 certainty, (value chosen from [Low, Medium, High])
                 source, (value chosen from [Article-defined, Knowledge-based])
-                tissue], (value chosen from [Brain, Liver, Kidney, Heart, Lung...])
+                tissue, (value chosen from [Brain, Liver, Kidney, Heart, Lung...])
+                disease, (value chosen from [Healthy, Cancer, Alzheimer, Parkinson...])
+                developmental_stage], (value chosen from [Embryonic, Fetal, Neonatal, Adult...])
                 ...}. "
                 
-        reasoning: {str, reasoning for the re-annotation}""",
+        reasoning: {str, reasoning for the re-annotation}
+        
+        <example>
+        <response>
+        annotation_dict: {0: ['T cell', 'High', 'Article-defined', 'Blood', 'Healthy', 'Adult'],
+                            1: ['B cell', 'Medium', 'Knowledge-based', 'Blood', 'Healthy', 'Adult']}
+                            
+        reasoning: The expression of CD3E and CD3D is high in cluster 0, which is a typical marker of T cells. The expression of CD19 is medium high in cluster 1, which is a typical marker of B cells, but not as high as in cluster 2
+        </response>
+        </example>""",
     }
     
     TOOL_PROMPTS = {
@@ -145,8 +211,9 @@ class Config:
         For example: geneA: highest expression in cluster 0, not expressed in other clusters. geneB: not expressed in cluster 4, relatively high expression in cluster 2. 
         Please directly output your summary by gene. """,
         
-        'NO_CONTEXT_ANNOTATION_PROMPT': """Identify cell types of cells using the following markers separately for each row. Only provide the cell type name. 
-        Do not show numbers before the name. Some can be a mixture of multiple cell types.
+        'NO_CONTEXT_ANNOTATION_PROMPT': """Identify cell types of cells using the following markers separately for each row. Only provide the cell type name.
+        You should try to assign a **cell ontology** label to each cluster (e.g. B cell, T cell, etc.),  
+        Do not show numbers before the name. Some can be a mixture of multiple cell types. 
          
         OUTPUT_FORMAT (description of the parameters is in the curly braces, do not include the description in the output):
         annotation_dict: {0: 'cell_type1', 1: 'cell_type2', ...}

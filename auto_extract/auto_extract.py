@@ -4,23 +4,26 @@ import os
 import warnings
 import time
 
+import pickle
 from typing import Optional
 from pyfiglet import Figlet
 import colorama
 from termcolor import colored
 
-from .claude3 import Claude3, Openai
+from .agent import Claude3, Openai, get_cell_type_embedding_by_llm
 from .preprocess import filter, preprocess, clustering
 from .annotation import get_marker_genes, annotate, query_datasets, simple_annotate
 from .parse_params import Params 
 from .config import Config
 
-from utils.uitls import convert_ensembl_to_symbol
+from utils.utils import convert_ensembl_to_symbol
 
 def auto_extract(adata_path: str, 
                  pdf_path: str, 
                  output_dir: str,
                  output_name: str = 'processed.h5ad',
+                 output_log: str = 'auto_extract.log',
+                 output_config_pkl: str = 'config.pkl',
                  benchmark_no_context_key: Optional[str] = None,
                  ) -> None:
     """
@@ -30,9 +33,9 @@ def auto_extract(adata_path: str,
     logging.basicConfig(level=logging.INFO)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    if os.path.exists(os.path.join(output_dir, 'auto_extract.log')):
-        os.remove(os.path.join(output_dir, 'auto_extract.log'))
-    file_handler = logging.FileHandler(os.path.join(output_dir, 'auto_extract.log'))
+    if os.path.exists(os.path.join(output_dir, output_log)):
+        os.remove(os.path.join(output_dir, output_log))
+    file_handler = logging.FileHandler(os.path.join(output_dir, output_log))
     formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
     file_handler.setFormatter(formatter)
     logging.getLogger().addHandler(file_handler)
@@ -159,9 +162,21 @@ def auto_extract(adata_path: str,
                 logging.info(colored('No genes found in the dataset to query.', color='yellow'))
         else:
             logging.info(colored('No genes to query.', color='yellow'))
-                
+    
+    if Config().CONVERT_EMBEDDING:
+        params.embedding_dict = {}
+        for key in adata.obs.columns:
+            if key in ['leiden', 'louvain', 'tissue', 'disease', 'developmental_stage']:
+                words_list = list(adata.obs[key].unique())
+                embedding_list = get_cell_type_embedding_by_llm(words_list)
+                for i in range(len(words_list)):
+                    params.embedding_dict[words_list[i]] = embedding_list[i]
+    
     # Save processed AnnData object
-    logging.info(colored('Saving processed AnnData object', color='cyan', attrs=['bold']))
+    logging.info(colored('Saving processed AnnData object and config file', color='cyan', attrs=['bold']))
+    logging.info(f'Saving processed config file to {os.path.join(output_dir,output_config_pkl)}')
+    with open(os.path.join(output_dir, output_config_pkl), 'wb') as f:
+        pickle.dump(params, f)
     logging.info(f'Saving processed AnnData object to {os.path.join(output_dir,output_name)}')
     adata.write(os.path.join(output_dir, output_name))
 

@@ -12,6 +12,7 @@ import logging
 import pickle
 
 from benchmark.benchmark import request_ols, ontology_pairwise_similarity
+from auto_extract.agent import get_cell_type_embedding_by_llm
 
 def merge_datasets(file_list: List[str]) -> ad.AnnData:
     """
@@ -30,7 +31,6 @@ def merge_datasets(file_list: List[str]) -> ad.AnnData:
             raw_adata.obs['cell_type'] = raw_adata.obs['louvain'].astype(str).str.replace('_', ' ').copy()
         else:
             raise ValueError('No clustering result in the dataset')
-        raw_adata.obs['cell_type'] = raw_adata.obs['cell_type'].str.replace('/', '|').astype('category') # to avoid the error in writing h5ad file
         if 'adata_all' not in locals():
             adata_all = raw_adata.copy()
         else:
@@ -116,22 +116,6 @@ def create_prior_similarity_matrix(df_raw: pd.DataFrame,
         
     else:
         raise ValueError("Unknown prior method.")
-        
-# TODO: implement this part
-def get_cell_type_embedding_by_llm(cell_types: List[str]) -> List[np.ndarray]:
-    """
-    Get cell type embeddings by using the OpenAI API.
-    """
-    api_key = ""
-    azure_endpoint = ""
-    client = AzureOpenAI(
-    api_key=api_key, api_version="2024-02-01", azure_endpoint=azure_endpoint
-    )
-    response = client.embeddings.create(
-        model="text-embedding-3-large", input=cell_types
-    )
-    emb = [x.embedding for x in response.data]
-    return emb
 
 def normalize_connectivities(df_raw: pd.DataFrame,
                             prior_similarity_matrix_df: pd.DataFrame,
@@ -141,6 +125,7 @@ def normalize_connectivities(df_raw: pd.DataFrame,
         '''
         
         assert df_raw.shape == prior_similarity_matrix_df.shape
+        df_raw = df_raw.copy() # avoid changing the original matrix
         
         # combine raw connectivities matrix with prior similarity matrix
         for i in range(len(df_raw)):

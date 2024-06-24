@@ -13,6 +13,8 @@ def main():
                         pdf_path=args.pdf_path,
                         output_dir=args.output_dir,
                         output_name=args.output_name,
+                        output_log=args.output_log,
+                        output_config_pkl=args.output_config_pkl,
                         benchmark_no_context_key=args.benchmark_no_context_key)
     elif args.subcommand == 'benchmark':
         benchmark_annotation(adata_path=args.adata_path,
@@ -21,6 +23,7 @@ def main():
                              ontology=args.ontology,
                              method=args.method,
                              similarity_key=args.similarity_key,
+                             result_metrics_path=args.result_metrics_path,
                              output_path=args.output_path)
     elif args.subcommand == 'add_singler_annotation':
         add_singler_annotation(adata_path=args.adata_path,
@@ -28,6 +31,7 @@ def main():
                                ref_data=args.ref_data,
                                ref_features=args.ref_features,
                                ref_labels=args.ref_labels,
+                               key_added=args.key_added,
                                cache_dir=args.cache_dir)
     elif args.subcommand == 'integrate':
         integrate_processed_datasets(file_list=args.file_list,

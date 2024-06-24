@@ -39,8 +39,9 @@ benchmark_annotation(
     adata_path=os.path.join(processed_data_dir, f"{sample}_processed.h5ad"),
     output_path=os.path.join(processed_data_dir, f"{sample}_processed_benchmark.h5ad"),
     true_group_key='cell_type',
+    config_path=os.path.join(processed_data_dir, f"config.pkl"),
+    result_metrics_path=os.path.join(processed_data_dir, f"{sample}_benchmark_metrics.txt"),
+    method = "embedding",
     predict_group_key='scextract,no_context_annotation,singler_annotation',
-    ontology='cl',
-    method='ols_api',
     similarity_key='similarity_scextract,similarity_no_context_annotation,similarity_singler'
 )

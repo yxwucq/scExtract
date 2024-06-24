@@ -44,15 +44,19 @@ def annotate(adata: ad.AnnData,
     certainty_dict = {key: value[1] for key, value in annotation_dict.items()}
     source_dict = {key: value[2] for key, value in annotation_dict.items()}
     tissue_dict = {key: value[3] for key, value in annotation_dict.items()}
+    disease_dict = {key: value[4] for key, value in annotation_dict.items()}
+    developmental_stage_dict = {key: value[5] for key, value in annotation_dict.items()}
     
     adata.obs['Certainty'] = adata.obs[cluster_key].map(certainty_dict)
     adata.obs['Source'] = adata.obs[cluster_key].map(source_dict)
     adata.obs['Tissue'] = adata.obs[cluster_key].map(tissue_dict)
+    adata.obs['Disease'] = adata.obs[cluster_key].map(disease_dict)
+    adata.obs['Developmental_stage'] = adata.obs[cluster_key].map(developmental_stage_dict)
 
     if final:
-        adata.obs[cluster_key] = adata.obs[cluster_key].map(rename_dict).astype('category')
+        adata.obs[cluster_key] = adata.obs[cluster_key].map(rename_dict).str.replace('/', '|').astype('category')
     else:
-        adata.obs[f"{cluster_key}_rough"] = adata.obs[cluster_key].map(rename_dict).astype('category')
+        adata.obs[f"{cluster_key}_rough"] = adata.obs[cluster_key].map(rename_dict).str.replace('/', '|').astype('category')
     
     return adata
 
