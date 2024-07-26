@@ -2,10 +2,16 @@
 
 scExtract is a tool for automating the extraction, processing, and annotation of single-cell data from literature. The tool is designed to use LLMs to extract relevant information from scientific articles and process the data.
 
-## Usage
 The input of the program are an anndata object and a PDF/txt file containing the article from which the single-cell data is to be extracted. 
 
-First copy `auto_extract/config_sample.py` to `auto_extract/config.py`, then fill your api provider(Claude3 and OpenAI models are both supported) in `auto_extract/config.py`:
+## Usage
+
+- Step1: Clone repo from github
+```
+git clone https://github.com/yxwucq/scExtract
+```
+
+- Step2: Copy `auto_extract/config_sample.py` to `auto_extract/config.py`, then fill your api provider(Claude3 and OpenAI models are both supported) in `auto_extract/config.py`:
 
 ```
 class Config:
@@ -30,14 +36,24 @@ class Config:
 
 If you using GPTs for text extraction, you can set `API_STYLES = same` to use same setting. But there are no official text-to-embedding model in Claudes, you can set `API_STYLES = azure|openai` and according api key and endpoint to use Openai t2e model while using Claudes for text extraction.
 
-Then directly excute through `python main.py `
+- Step3: Add requirements and install locally
+```
+pip install -f requirements.txt
+pip install -e .
+```
+
+Finally, directly excute by typing `scExtract`:
+
+```
+scExtract -h   
+```
 
 ### Annotate
 
 Using `auto_extract` subcommand.
 
 ```
-python main.py auto_extract \
+scExtract auto_extract \
     -i ADATA_PATH \
     -p PDF_PATH \
     -d OUTPUT_DIR \
@@ -54,40 +70,43 @@ The extraction follows these steps, the processing decisions/parameters are all 
 
 For detailed configuration, refer to `config.py`.
 
-### Benchmark
-
-For a whole process, including extract annotation, add other method, compare with ground truth for benchmarking, you can directly run
-`python pipelines.py sample{i}` in the following folder structure:
-
-```
-.
-├── processed_data
-│   └── sample{i}_true.h5ad # Contains `cell_type` col in obs for benchmarking
-└── raw_data
-    ├── sample{i}.pdf
-    └── sample{i}_raw.h5ad # Contains `Batch` col in obs for possible batch correction
-```
-
 ### Integration
 
 Using `integrate` subcommand.
 
 ```
-python main.py integrate \
+scExtract integrate \
     -f FILE_LIST \
     -m scExtract Method to use for integration. Support scExtract and cellhint. \
     --prior_method llm Method to use for creating the prior similarity matrix. Support ontology, llm and local.
 ```
 
-For large dataset computed on HPC without internet, you can first generate text embedding by individual dataset using `python integration/extract_celltype_embedding.py`. Then integrate using local provided dict object:
+For large dataset computed on HPC without internet access, you can first generate text embedding by individual dataset using `python integration/extract_celltype_embedding.py`. Then integrate using local provided dict object:
 
 ```
-python main.py integrate \
+scExtract integrate \
     -f FILE_LIST \
     -m scExtract Method to use for integration. Support scExtract and cellhint. \
     --prior_method local \
     --embedding_dict_path EMBEDDING_DICT_PATH Path to the cell type embedding dictionary.
 ```
+
+### Benchmark
+
+For benchmark, using `benchmark` subcommand:
+```
+scExtract benchmark \
+    -i INPUT_ADATA \
+    -o OUTPUT_ADATA \
+    -r METRICS_FILE \
+    --true_group_key TRUE_KEY \
+    --predict_group_key KEY1,KEY2,... \
+    --similarity_key SIMI_KEY1,SIMI_KEY2,...
+```
+
+## Other methods
+### add singleR annotation
+see `scExtract add_singler_annotation -h`
 
 ## Example
 
@@ -99,34 +118,3 @@ Muto, Y., Wilson, P.C., Ledru, N. et al. Single cell transcriptional and chromat
 `Cell_type` is author-defined cell type, `scExtract` is cell type extracted from scExtract, `no_context_anno` is cell type extracted without context information, `singler` is cell type from singleR. `Tissue`, `Certainty` are from scExtract.
 
 ![sample8](src/sample8_benchmark.png)
-
-## Other methods
-### singleR
-see `python main.py add_singler_annotation -h`
-```
-usage: main.py add_singler_annotation [-h] --adata_path ADATA_PATH [--output_path OUTPUT_PATH] [--ref_data REF_DATA] [--ref_features REF_FEATURES]
-                                      [--ref_labels REF_LABELS] [--cache_dir CACHE_DIR]
-
-options:
-  -h, --help            show this help message and exit
-  --adata_path ADATA_PATH, -i ADATA_PATH
-                        Path to the processed data in AnnData format.
-  --output_path OUTPUT_PATH, -o OUTPUT_PATH
-                        Path to save the output file. If not specified, the input file will be overwritten.
-  --ref_data REF_DATA, -d REF_DATA
-                        Reference data to use for annotation.
-  --ref_features REF_FEATURES, -f REF_FEATURES
-                        Reference features to use for annotation.
-  --ref_labels REF_LABELS, -l REF_LABELS
-                        Reference labels to use for annotation.
-  --cache_dir CACHE_DIR, -c CACHE_DIR
-                        Directory to save the cache files.
-```
-
-### LLM without article context
-In `python main.py auto_extract`, add `--benchmark_no_context_key`
-```
---benchmark_no_context_key BENCHMARK_NO_CONTEXT_KEY, -b BENCHMARK_NO_CONTEXT_KEY
-                        If specified, Directly get annotation from marker genes without article context for benchmarking, the result will be saved in
-                        adata.obs[benchmark_no_context_key].
-```

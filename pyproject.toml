@@ -1,0 +1,14 @@
+# pyproject.toml
+
+[tool.poetry]
+name = "scExtract"
+version = "0.1.0"
+description = "Automatically processing single-cell data from articles"
+authors = ["Yuxuan George Wu <yxwucq@outlook.com>"]
+
+[tool.poetry.scripts]
+scExtract = "scextract.main:main"
+
+[build-system]
+requires = ["poetry-core==1.9.0"]
+build-backend = "poetry.core.masonry.api"

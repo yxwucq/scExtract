@@ -12,6 +12,7 @@ import numpy as np
 import pickle
 import argparse
 import logging
+import sys
 
 from auto_extract.agent import get_cell_type_embedding_by_llm
 
