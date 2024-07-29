@@ -272,7 +272,7 @@ def benchmark_annotation_ols(adata_path : str,
             f.write(f"ARI for {predict_group_key}: {ari_list[i]}\n")
         for similarity_key in similarity_key_list:
             f.write(f"Similarity key: {similarity_key}, Mean: {np.mean(adata.obs[similarity_key])}\n")
-            f.write(f"Group-level similarity mean: {adata.obs.groupby(true_group_key)[similarity_key].mean().mean()}\n")
+            f.write(f"Group-level Similarity key: {similarity_key}, Mean: {adata.obs.groupby(true_group_key)[similarity_key].mean().mean()}\n")
  
     if output_path is not None:
         adata.write(output_path)

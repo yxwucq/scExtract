@@ -232,11 +232,14 @@ class Claude3(BaseClient):
         
         return resp
     
-def get_cell_type_embedding_by_llm(cell_types: List[str]) -> List[np.ndarray]:
+def get_cell_type_embedding_by_llm(cell_types: List[str],
+                                   prefix = 'cell type annotation: ',
+                                   ) -> List[np.ndarray]:
     """
     Get cell type embeddings by using the OpenAI API.
     """
     
+    cell_types = [prefix+x for x in cell_types]
     embedding_api_key = Config().EMBEDDING_API_KEY
     azure_endpoint = Config().EMBEDDING_ENDPOINT
     

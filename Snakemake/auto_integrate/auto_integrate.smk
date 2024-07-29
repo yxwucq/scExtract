@@ -1,0 +1,99 @@
+# Author: Yuxuan Wu
+
+import os
+
+configfile: "config.yaml"
+print(f"configfile: config.yaml")
+
+project_dir = config["project_dir"]
+name_list = glob_wildcards(project_name + "/{sample}")
+print(f"project_name: {project_name}")
+
+if config['applied_files'] != 'all':
+    name_list = [x for x in name_list if config['applied_files'] in x]
+print(f"Pipeline applied to {name_list}")
+
+DEBUG = bool(config['debug'])
+def tempd(file):
+    return temp(file) if not DEBUG else file
+
+rule AutoExtract:
+    input:
+        input_adata=os.path.join(project_name, "{sample}", "{sample}_raw.h5ad"),
+        pdf_file=os.path.join(project_name, "{sample}", "{sample}.pdf"),
+    params:
+        output_dir=os.path.join(project_name, "{sample}"),
+        output_name="{sample}_extracted.h5ad",
+    output:
+        output_adata=tempd(os.path.join(project_name, "{sample}", "{sample}_" + config["output_suffix"] + ".h5ad")),
+        output_config_pkl=os.path.join(project_name, "{sample}", config["config_pkl"]),
+        output_log=os.path.join(project_name, "{sample}", config["log_file"]),
+    shell: """
+        scExtract auto_extract \
+            --input_adata {input.input_adata} \
+            --pdf_file {input.pdf_file} \
+            --output_dir {params.output_dir} \
+            --output_name {params.output_name} \
+            --output_config_pkl {output.output_config_pkl} \
+            --output_log {output.output_log}
+    """
+
+rule AddSingleR:
+    input:
+        output_adata=os.path.join(project_name, "{sample}", "{sample}_" + config["output_suffix"] + "_extracted.h5ad"),
+    params:
+        ref_data=config["ref_data"],
+        ref_features=config["ref_features"],
+        ref_labels=config["ref_labels"],
+        singler_key=config["singler_key"],
+    output:
+        with_singler_adata=tempd(os.path.join(project_name, "{sample}", "{sample}_" + config["output_suffix"] + "_with_singler.h5ad")),
+    shell: """
+        scExtract add_singler_annotation \
+            --adata_path {input.output_adata} \
+            --output_path {output.with_singler_adata} \
+            --ref_data {params.ref_data} \
+            --ref_features {params.ref_features} \
+            --ref_labels {params.ref_labels} \
+            --singler_key {params.singler_key}
+    """
+
+rule IntersectTrue:
+    input:
+        with_singler_adata=os.path.join(project_name, "{sample}", "{sample}_" + config["output_suffix"] + "_with_singler.h5ad"),
+        true_adata=os.path.join(project_name, "{sample}", "{sample}_true.h5ad"),
+    params:
+        true_key=config["true_key"],
+    output:
+        with_true_adata=tempd(os.path.join(project_name, "{sample}", "{sample}_" + config["output_suffix"] + "_with_true.h5ad")),
+    run:
+        import scanpy as sc
+        adata = sc.read_h5ad(input.with_singler_adata)
+        adata_true = sc.read_h5ad(input.true_adata)
+        adata = adata[adata.obs.index.isin(adata_true.obs.index)].copy()
+        adata.obs[config["true_key"]] = adata_true.obs[config["true_key"]]
+        adata.write(output.with_true_adata)
+
+rule Benchmark:
+    input:
+        with_true_adata=os.path.join(project_name, "{sample}", "{sample}_" + config["output_suffix"] + "_with_true.h5ad"),
+        config_pkl=os.path.join(project_name, "{sample}", config["config_pkl"]),
+    params:
+        true_key=config["true_key"],
+        method=config["method"],
+        predict_group_key=config["predict_group_key"],
+        similarity_key=config["similarity_key"],
+    output:
+        output_benchmark=os.path.join(project_name, "{sample}", "{sample}_" + config["output_suffix"] + "_benchmark.h5ad"),
+        output_metrics=os.path.join(project_name, "{sample}", "{sample}_" + config["output_suffix"] + "_metrics.txt"),
+    shell: """
+        scExtract benchmark \
+            --adata_path {input.with_true_adata} \
+            --output_path {output.output_benchmark} \
+            --result_metrics_path {output.output_metrics} \
+            --method {params.method} \
+            --true_key {params.true_key} \
+            --predict_group_key {params.predict_group_key} \
+            --similarity_key {params.similarity_key} \
+            --config_path {params.config_pkl}
+    """
