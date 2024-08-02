@@ -233,7 +233,7 @@ class Claude3(BaseClient):
         return resp
     
 def get_cell_type_embedding_by_llm(cell_types: List[str],
-                                   prefix = 'cell type annotation: ',
+                                   prefix = '',
                                    ) -> List[np.ndarray]:
     """
     Get cell type embeddings by using the OpenAI API.

@@ -56,6 +56,7 @@ def request_ols(query_cell_type: str,
         for i in range(len(results)):
             if results[i]['obo_id'].startswith(ontology.upper()):
                 return results[i]['obo_id'], results[i]['label']
+        return None, None
     else:
         return None, None
 
@@ -153,7 +154,8 @@ def benchmark_annotation(adata_path : str,
 
             for x in predict_cell_type_list:
                 for y in true_cell_type_list:
-                    similarity_dict[(x, y)] = np.dot(config.embedding_dict[x], config.embedding_dict[y])
+                    similarity_dict[(x, y)] = np.dot(config.embedding_dict[x], config.embedding_dict[y]) / \
+                                                (np.linalg.norm(config.embedding_dict[x]) * np.linalg.norm(config.embedding_dict[y]))
 
             adata.obs[similarity_key] = adata.obs.apply(lambda x: similarity_dict[(x[predict_group_key], x[true_group_key])], axis=1)
             
@@ -168,7 +170,7 @@ def benchmark_annotation(adata_path : str,
                 f.write(f"ARI for {predict_group_key}: {ari_list[i]}\n")
             for similarity_key in similarity_key_list:
                 f.write(f"Similarity key: {similarity_key}, Mean: {np.mean(adata.obs[similarity_key])}\n")
-                f.write(f"Group-level similarity mean: {adata.obs.groupby(true_group_key)[similarity_key].mean().mean()}\n")
+                f.write(f"Group-level Similarity key: {similarity_key}, Mean: {adata.obs.groupby(true_group_key)[similarity_key].mean().mean()}\n")
         
         if output_path is not None:
             adata.write(output_path)

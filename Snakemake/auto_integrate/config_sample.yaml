@@ -10,15 +10,9 @@ applied_files: all
 config_pkl: config.pkl
 log_file: auto_extract.log
 
-# Step 2: SingleR analysis
-ref_data: HumanPrimaryCellAtlas
-ref_features: symbol
-ref_labels: main
-singler_key: singler
+# Step 2: Add embedding
+AddEmbedding.user_dataset: 
 
-# Step 3: Benchmarking
-true_key: cell_type
-method: embedding
-predict_group_key: scextract,no_context_annotation,singler
-similarity_key: similarity_scextract,similarity_no_context_annotation,similarity_singler
-
+# Step 3: Integration
+method: cellhint
+prior_weight: 0.2

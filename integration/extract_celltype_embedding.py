@@ -52,6 +52,8 @@ def extract_celltype_embedding(file_list: str,
         for key, value in zip(cell_types, emb):
             embeddings_dict[key] = value
     
+        del adata
+        
     logging.info(f"Toal {len(embeddings_dict)} cell type embeddings are extracted.")
     
     with open(output_pkl, 'wb') as f:

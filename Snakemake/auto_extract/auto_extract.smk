@@ -40,7 +40,7 @@ rule AutoExtract:
             --output_dir {params.output_dir} \
             --output_name {params.output_name} \
             --output_config_pkl {output.output_config_pkl} \
-            --output_log {output.output_log}
+            --output_log {output.output_log} \
             --benchmark_no_context_key no_context_annotation
     """
 

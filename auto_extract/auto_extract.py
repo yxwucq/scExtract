@@ -56,8 +56,8 @@ def auto_extract(adata_path: str,
     
     if adata.shape[0] > 50000:
         logging.warning(colored(f"Large dataset detected. The dataset contains {adata.shape[0]} cells. \
-                            The result extracted by LLM may not be accurate. Please consider manually \
-                                subsetting the data to a smaller size.", color='light_red'))
+The result extracted by LLM may not be accurate. Please consider manually \
+subsetting the data to a smaller size.", color='light_red'))
     
     # Check if Ensembl IDs are present in AnnData object
     for genes in adata.var.index[:10]:

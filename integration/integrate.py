@@ -36,6 +36,8 @@ def merge_datasets(file_list: List[str]) -> ad.AnnData:
         else:
             adata_all = ad.concat([adata_all, raw_adata], join='outer')
             adata_all.obs_names_make_unique()
+            
+        del adata
     
     adata_all.obs = adata_all.obs.drop(columns = ['leiden', 'louvain'])
     del adata_all.var
@@ -99,7 +101,13 @@ def create_prior_similarity_matrix(df_raw: pd.DataFrame,
         ct = df_raw.index.str.split('_').str[1].tolist()
         emb = get_cell_type_embedding_by_llm(ct)
         emb = np.array(emb)
-        similarity_matrix = np.dot(emb, emb.T)
+        emb_norm = np.linalg.norm(emb, axis = 1)
+        similarity_matrix = np.dot(emb, emb.T) / np.outer(emb_norm, emb_norm)
+        similarity_matrix_1 = (similarity_matrix - np.mean(similarity_matrix)[:, np.newaxis]) / (1 - np.mean(similarity_matrix)[:, np.newaxis])
+        similarity_matrix_1[similarity_matrix_1 < 0] = 0
+        similarity_matrix_2 = (similarity_matrix - np.mean(similarity_matrix)[np.newaxis, :]) / (1 - np.mean(similarity_matrix)[np.newaxis, :])
+        similarity_matrix_2[similarity_matrix_2 < 0] = 0
+        similarity_matrix = (similarity_matrix_1 + similarity_matrix_2) / 2
         similarity_matrix_df = pd.DataFrame(similarity_matrix, index = df_raw.index, columns = df_raw.index)
         return similarity_matrix_df
     
@@ -111,6 +119,11 @@ def create_prior_similarity_matrix(df_raw: pd.DataFrame,
             emb_list = [embedding_dict[x] for x in df_raw.index.str.split('_').str[1]]
             emb = np.array(emb_list)
             similarity_matrix = np.dot(emb, emb.T)
+            similarity_matrix_1 = (similarity_matrix - np.mean(similarity_matrix)[:, np.newaxis]) / (1 - np.mean(similarity_matrix)[:, np.newaxis])
+            similarity_matrix_1[similarity_matrix_1 < 0] = 0
+            similarity_matrix_2 = (similarity_matrix - np.mean(similarity_matrix)[np.newaxis, :]) / (1 - np.mean(similarity_matrix)[np.newaxis, :])
+            similarity_matrix_2[similarity_matrix_2 < 0] = 0
+            similarity_matrix = (similarity_matrix_1 + similarity_matrix_2) / 2
             similarity_matrix_df = pd.DataFrame(similarity_matrix, index = df_raw.index, columns = df_raw.index)
             return similarity_matrix_df
         
@@ -172,7 +185,7 @@ def integrate_processed_datasets(file_list: List[str],
     if method == 'cellhint':
         if alignment_path is None:
             alignment_path = output_path.replace('.h5ad', '.pkl')
-        alignment = cellhint.harmonize(adata_all, dataset = 'dataset', cell_type = 'cell_type', use_rep = 'X_pca', **kwargs)
+        alignment = cellhint.harmonize(adata_all, dataset = 'dataset', cell_type = 'cell_type', use_rep = 'X_pca', prior_path = embedding_dict_path, prior_weight = prior_weight, **kwargs)
         alignment.write(alignment_path)
     
     elif method == 'scExtract':

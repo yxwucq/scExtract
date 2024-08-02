@@ -24,7 +24,7 @@ class Params:
                                   simple_annotation: bool = False,
                                   ) -> Dict[int, List[str]|str]:
         annotation_response = annotation_response.replace('\n', '')
-        annotation_dict = re.search(r'annotation_dict: {.*}', annotation_response)
+        annotation_dict = re.search(r'annotation_dict: {.*?}', annotation_response)
         annotation_dict = annotation_dict.group(0).replace('annotation_dict: ', '')
         
         try:
