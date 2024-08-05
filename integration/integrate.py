@@ -103,9 +103,9 @@ def create_prior_similarity_matrix(df_raw: pd.DataFrame,
         emb = np.array(emb)
         emb_norm = np.linalg.norm(emb, axis = 1)
         similarity_matrix = np.dot(emb, emb.T) / np.outer(emb_norm, emb_norm)
-        similarity_matrix_1 = (similarity_matrix - np.mean(similarity_matrix)[:, np.newaxis]) / (1 - np.mean(similarity_matrix)[:, np.newaxis])
+        similarity_matrix_1 = (similarity_matrix - np.mean(similarity_matrix, axis=1)[:, np.newaxis]) / (1 - np.mean(similarity_matrix, axis=1)[:, np.newaxis])
         similarity_matrix_1[similarity_matrix_1 < 0] = 0
-        similarity_matrix_2 = (similarity_matrix - np.mean(similarity_matrix)[np.newaxis, :]) / (1 - np.mean(similarity_matrix)[np.newaxis, :])
+        similarity_matrix_2 = (similarity_matrix - np.mean(similarity_matrix, axis=1)[np.newaxis, :]) / (1 - np.mean(similarity_matrix, axis=1)[np.newaxis, :])
         similarity_matrix_2[similarity_matrix_2 < 0] = 0
         similarity_matrix = (similarity_matrix_1 + similarity_matrix_2) / 2
         similarity_matrix_df = pd.DataFrame(similarity_matrix, index = df_raw.index, columns = df_raw.index)
@@ -119,9 +119,9 @@ def create_prior_similarity_matrix(df_raw: pd.DataFrame,
             emb_list = [embedding_dict[x] for x in df_raw.index.str.split('_').str[1]]
             emb = np.array(emb_list)
             similarity_matrix = np.dot(emb, emb.T)
-            similarity_matrix_1 = (similarity_matrix - np.mean(similarity_matrix)[:, np.newaxis]) / (1 - np.mean(similarity_matrix)[:, np.newaxis])
+            similarity_matrix_1 = (similarity_matrix - np.mean(similarity_matrix, axis=1)[:, np.newaxis]) / (1 - np.mean(similarity_matrix, axis=1)[:, np.newaxis])
             similarity_matrix_1[similarity_matrix_1 < 0] = 0
-            similarity_matrix_2 = (similarity_matrix - np.mean(similarity_matrix)[np.newaxis, :]) / (1 - np.mean(similarity_matrix)[np.newaxis, :])
+            similarity_matrix_2 = (similarity_matrix - np.mean(similarity_matrix, axis=0)[np.newaxis, :]) / (1 - np.mean(similarity_matrix, axis=0)[np.newaxis, :])
             similarity_matrix_2[similarity_matrix_2 < 0] = 0
             similarity_matrix = (similarity_matrix_1 + similarity_matrix_2) / 2
             similarity_matrix_df = pd.DataFrame(similarity_matrix, index = df_raw.index, columns = df_raw.index)

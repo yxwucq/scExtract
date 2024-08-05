@@ -19,7 +19,7 @@ def tempd(file):
 
 rule all:
     input:
-        finished=os.path.join(project_dir, "integrate_input", "finished.stamp")
+        finished=os.path.join(project_dir, f"integrate_input_{config["output_suffix"]}", "finished.stamp")
 
 rule AutoExtract:
     input:
@@ -47,7 +47,7 @@ rule AddEmbedding:
     input:
         merge_output_adata=expand(os.path.join(project_dir, "{sample}", "{sample}_" + config["output_suffix"] + "_extracted.h5ad"), sample=name_list),
     output:
-        merged_embedding_dict=os.path.join(project_dir, "embedding_dict.pkl"),
+        merged_embedding_dict=os.path.join(project_dir, f"{config["output_suffix"]}embedding_dict.pkl"),
     params:
         user_dataset=config["AddEmbedding.user_dataset"],
     shell: """
@@ -77,10 +77,10 @@ rule AddEmbedding:
 rule Integrate_Input:
     input:
         merge_output_adata=expand(os.path.join(project_dir, "{sample}", "{sample}_" + config["output_suffix"] + "_extracted.h5ad"), sample=name_list),
-        merged_embedding_dict=os.path.join(project_dir, "embedding_dict.pkl"),
+        merged_embedding_dict=os.path.join(project_dir, f"{config["output_suffix"]}embedding_dict.pkl"),
     output:
-        merged_adata_input=directory(os.path.join(project_dir, "integrate_input")),
-        finished=os.path.join(project_dir, "integrate_input", "finished.stamp"),
+        merged_adata_input=directory(os.path.join(project_dir, f"integrate_input_{config["output_suffix"]}")),
+        finished=os.path.join(project_dir, f"integrate_input_{config["output_suffix"]}", "finished.stamp"),
     params:
         user_dataset=config["AddEmbedding.user_dataset"],
     shell: """
