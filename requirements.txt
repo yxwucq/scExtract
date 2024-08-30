@@ -1,17 +1,17 @@
-anndata == 0.10.7
-anthropic == 0.25.1
-colorama == 0.4.6
-defusedxml == 0.7.1
-harmonypy == 0.0.9
-leidenalg == 0.10.2
-louvain == 0.8.2
-mygene == 3.2.2
-oaklib == 0.6.3
-openai == 1.17.0
-pyfiglet == 1.0.2
-pypdf == 4.2.0
-scanpy == 1.10.1
-singler == 0.1.2
-singlecellexperiment == 0.4.4
-termcolor == 2.4.0
-tqdm == 4.66.2
+anndata==0.10.7
+anthropic==0.25.1
+colorama==0.4.6
+defusedxml==0.7.1
+harmonypy==0.0.9
+leidenalg==0.10.2
+louvain==0.8.2
+mygene==3.2.2
+oaklib==0.6.3
+openai==1.17.0
+pyfiglet==1.0.2
+pypdf==4.2.0
+scanpy==1.10.1
+singler==0.1.2
+singlecellexperiment==0.4.4
+termcolor==2.4.0
+tqdm==4.66.2

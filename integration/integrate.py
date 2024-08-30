@@ -3,7 +3,6 @@ from tqdm import tqdm
 import anndata as ad
 import cellhint
 from scipy.sparse import csr_matrix
-from openai import AzureOpenAI, OpenAI
 from scipy.sparse.csgraph import minimum_spanning_tree
 import scanpy as sc
 import pandas as pd
