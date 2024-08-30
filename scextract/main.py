@@ -9,18 +9,24 @@ def main():
         auto_extract(adata_path=args.adata_path,
                         pdf_path=args.pdf_path,
                         output_dir=args.output_dir,
+                        config_path=args.config_path,
                         output_name=args.output_name,
                         output_log=args.output_log,
                         output_config_pkl=args.output_config_pkl,
                         benchmark_no_context_key=args.benchmark_no_context_key)
+    elif args.subcommand == 'init':
+        from utils.init_project import init_project
+        init_project(config_path=args.config_path,
+                     overwrite=args.overwrite)
     elif args.subcommand == 'benchmark':
         from benchmark.benchmark import benchmark_annotation
         benchmark_annotation(adata_path=args.adata_path,
                              true_group_key=args.true_group_key,
+                             config_path=args.config_path,
                              predict_group_key=args.predict_group_key,
                              ontology=args.ontology,
                              method=args.method,
-                             config_path=args.config_path,
+                             output_config_pkl=args.output_config_pkl,
                              similarity_key=args.similarity_key,
                              result_metrics_path=args.result_metrics_path,
                              output_path=args.output_path)
@@ -36,11 +42,14 @@ def main():
     elif args.subcommand == 'extract_celltype_embedding':
         from integration.extract_celltype_embedding import extract_celltype_embedding
         extract_celltype_embedding(file_list=args.file_list,
-                                   output_pkl=args.output_pkl,
-                                   config_path=args.config_path)
+                                   config_path=args.config_path,
+                                   output_embedding_pkl=args.output_embedding_pkl,
+                                   output_individual_config_pkl=args.output_individual_config_pkl,
+                                   )
     elif args.subcommand == 'integrate':
         from integration.integrate import integrate_processed_datasets
         integrate_processed_datasets(file_list=args.file_list,
+                                     config_path=args.config_path,
                                      method=args.method,
                                      output_path=args.output_path,
                                      prior_weight=args.prior_weight,

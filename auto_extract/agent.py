@@ -6,15 +6,18 @@ from tqdm import tqdm
 from abc import ABC, abstractmethod
 from typing import List
 import numpy as np
+import configparser
 
-from .config import Config
+from utils.prompts import Prompts
 
 class BaseClient(ABC):
-    def __init__(self, pdf_path: str = None):
-        self.api_key = Config().API_KEY
-        self.api_base_url = Config().API_BASE_URL
-        self.model = Config().MODEL
-        self.tool_model = Config().TOOL_MODEL
+    def __init__(self, pdf_path: str = None, config_path: str = 'config.ini'):
+        config = configparser.ConfigParser()
+        config.read(config_path)
+        self.api_key = config['API']['API_KEY']
+        self.api_base_url = config['API']['API_BASE_URL']
+        self.model = config['API']['MODEL']
+        self.tool_model = config['API']['TOOL_MODEL']
         self.messages = []
         
         self.pdf_path = pdf_path
@@ -43,8 +46,8 @@ class BaseClient(ABC):
     
     @update_messages
     def initiate_propmt(self, 
-                        initial_message: str = Config().get_prompt('SYSTEM_PROMPT'),
-                        user_message: str = Config().get_prompt('USER_ARTICLE_PROMPT'),
+                        initial_message: str = Prompts().get_prompt('SYSTEM_PROMPT'),
+                        user_message: str = Prompts().get_prompt('USER_ARTICLE_PROMPT'),
                         ):
         
         if self.extracted_text == '':
@@ -216,8 +219,8 @@ class Claude3(BaseClient):
 
     @update_messages
     def initiate_propmt(self, 
-                        initial_message: str = Config().get_prompt('SYSTEM_PROMPT'),
-                        user_message: str = Config().get_prompt('USER_ARTICLE_PROMPT'),
+                        initial_message: str = Prompts().get_prompt('SYSTEM_PROMPT'),
+                        user_message: str = Prompts().get_prompt('USER_ARTICLE_PROMPT'),
                         ):
         
         if self.extracted_text == '':
@@ -234,34 +237,38 @@ class Claude3(BaseClient):
     
 def get_cell_type_embedding_by_llm(cell_types: List[str],
                                    prefix = '',
+                                   config_path: str = 'config.ini'
                                    ) -> List[np.ndarray]:
     """
     Get cell type embeddings by using the OpenAI API.
     """
     
+    config = configparser.ConfigParser()
+    config.read(config_path)
+    
     cell_types = [prefix+x for x in cell_types]
-    embedding_api_key = Config().EMBEDDING_API_KEY
-    azure_endpoint = Config().EMBEDDING_ENDPOINT
+    embedding_api_key = config['API']['EMBEDDING_API_KEY']
+    azure_endpoint = config['API']['EMBEDDING_ENDPOINT']
     
-    if Config().API_STYLES == 'same':
-        if 'openai' in Config().TYPE:
+    if config['API']['API_STYLES'] == 'same':
+        if 'openai' in config['API']['TYPE']:
             agent = Openai()
-        elif 'claude' in Config().TYPE:
-            agent = Claude3()
+        elif 'claude' in config['API']['TYPE']:
+            raise ValueError('Claude3 does not support embedding API.')
         
-        emb = [agent.embeddings.create(input = [x], model=Config().EMBEDDING_MODEL).data[0].embedding for x in cell_types]
+        emb = [agent.embeddings.create(input = [x], model=config['API']['EMBEDDING_MODEL']).data[0].embedding for x in cell_types]
     
-    elif Config().API_STYLES == 'azure':
+    elif config['API']['API_STYLES'] == 'azure':
         client = AzureOpenAI(
         api_key=embedding_api_key, api_version="2024-02-01", azure_endpoint=azure_endpoint
         )
         response = client.embeddings.create(
-            model=Config().EMBEDDING_MODEL, input=cell_types
+            model=config['API']['EMBEDDING_MODEL'], input=cell_types
         )
         emb = [x.embedding for x in response.data]
     
-    elif Config().API_STYLES == 'openai':
+    elif config['API']['API_STYLES'] == 'openai':
         client = OpenAI(api_key=embedding_api_key, base_url=azure_endpoint)
-        emb = [agent.embeddings.create(input = [x], model=Config().EMBEDDING_MODEL).data[0].embedding for x in cell_types]
+        emb = [agent.embeddings.create(input = [x], model=config['API']['EMBEDDING_MODEL']).data[0].embedding for x in cell_types]
     
     return emb

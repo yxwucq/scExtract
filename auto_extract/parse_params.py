@@ -1,23 +1,27 @@
-from .config import Config
 from copy import deepcopy
 from typing import List, Dict
 import re
+import configparser
+
+from utils.prompts import Prompts
 
 class Params:
-    def __init__(self):
-        self.default_params = Config().DEFAULT_PARAMS
-        self.list_type_params = Config().LIST_TYPE_PARAMS
-        self.int_type_params = Config().INT_TYPE_PARAMS
-        self.bool_type_params = Config().BOOL_TYPE_PARAMS
-        self.categorical_params = Config().CATEGORICAL_PARAMS
-        self.params = deepcopy(self.default_params)
+    def __init__(self, config_path: str = 'config.ini'):
+        config = configparser.ConfigParser()
+        config.read(config_path)
+        self.default_params = deepcopy(config['DEFAULT_PARAMS'])
+        self.list_type_params = Prompts().LIST_TYPE_PARAMS
+        self.int_type_params = Prompts().INT_TYPE_PARAMS
+        self.bool_type_params = Prompts().BOOL_TYPE_PARAMS
+        self.categorical_params = Prompts().CATEGORICAL_PARAMS
+        self.params = dict(self.default_params)
     
     @property
     def get_params(self):
         return self.params
     
     def reset_params(self):
-        self.params = deepcopy(self.default_params)
+        self.params = dict(self.default_params)
     
     def parse_annotation_response(self, 
                                   annotation_response: str,
@@ -125,5 +129,8 @@ class Params:
     def __getitem__(self, key):
         return self.params[key]
     
-                
-            
+    def get_prompt(self, prompt_name: str) -> str:
+        return Prompts().get_prompt(prompt_name)
+    
+    def get_tool_prompt(self, prompt_name: str) -> str:
+        return Prompts().get_tool_prompt(prompt_name)

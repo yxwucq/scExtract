@@ -26,6 +26,7 @@ rule AutoExtract:
     input:
         input_adata=os.path.join(project_dir, "{sample}", "raw_data", "{sample}_raw.h5ad"),
         pdf_file=os.path.join(project_dir, "{sample}", "raw_data", "{sample}.pdf"),
+        config_file=os.path.join(project_dir, 'config.ini'),
     params:
         output_dir=os.path.join(project_dir, "{sample}"),
         output_name="{sample}_" + config["output_suffix"] + "_extracted.h5ad",
@@ -38,6 +39,7 @@ rule AutoExtract:
             --adata_path {input.input_adata} \
             --pdf_path {input.pdf_file} \
             --output_dir {params.output_dir} \
+            --config_path {input.config_file} \
             --output_name {params.output_name} \
             --output_config_pkl {output.output_config_pkl} \
             --output_log {output.output_log} \
@@ -83,7 +85,8 @@ rule IntersectTrue:
 rule Benchmark:
     input:
         with_true_adata=os.path.join(project_dir, "{sample}", "{sample}_" + config["output_suffix"] + "_with_true.h5ad"),
-        config_pkl=os.path.join(project_dir, "{sample}", config["config_pkl"]),
+        output_config_pkl=os.path.join(project_dir, "{sample}", config["config_pkl"]),
+        config_file=os.path.join(project_dir, 'config.ini'),
     params:
         true_key=config["true_key"],
         method=config["method"],
@@ -96,10 +99,11 @@ rule Benchmark:
         scExtract benchmark \
             --adata_path {input.with_true_adata} \
             --output_path {output.output_benchmark} \
+            --config_path {input.config_file} \
             --result_metrics_path {output.output_metrics} \
             --method {params.method} \
             --true_group_key {params.true_key} \
             --predict_group_key {params.predict_group_key} \
             --similarity_key {params.similarity_key} \
-            --config_path {input.config_pkl}
+            --output_config_pkl {input.output_config_pkl}
     """

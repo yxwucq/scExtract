@@ -4,7 +4,6 @@ from scipy.sparse import csc_matrix
 import anndata as ad
 import warnings
 
-from .config import Config
 from .parse_params import Params
 
 def filter(adata: ad.AnnData, 

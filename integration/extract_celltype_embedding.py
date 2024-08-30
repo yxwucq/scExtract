@@ -17,8 +17,9 @@ import sys
 from auto_extract.agent import get_cell_type_embedding_by_llm
 
 def extract_celltype_embedding(file_list: str,
-                               output_pkl: str,
-                               config_path: str = 'config.pkl',
+                               output_embedding_pkl: str,
+                               output_individual_config_pkl: Optional[str] = None,
+                               config_path: str = 'config.ini',
                                ):
     """
     Extract cell type embeddings from the processed datasets.
@@ -39,8 +40,8 @@ def extract_celltype_embedding(file_list: str,
         
         cell_types = [x.replace('/', '|') for x in cell_types]
         
-        file_config_path = file_path.replace('/*_processed.h5ad', '/') + config_path 
-        if os.path.exists(file_config_path):
+        file_config_path = output_individual_config_pkl
+        if os.path.exists(output_individual_config_pkl):
             with open(config_path, 'rb') as f:
                 config = pickle.load(f)
             if not all([x in config.embedding_dict.keys() for x in cell_types]):
@@ -56,13 +57,5 @@ def extract_celltype_embedding(file_list: str,
         
     logging.info(f"Toal {len(embeddings_dict)} cell type embeddings are extracted.")
     
-    with open(output_pkl, 'wb') as f:
+    with open(output_embedding_pkl, 'wb') as f:
         pickle.dump(embeddings_dict, f)
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--file_list', nargs='+', type=str, required=True)
-    parser.add_argument('--output_pkl', type=str, required=True)
-    args = parser.parse_args()
-    
-    extract_celltype_embedding(args.file_list, args.output_pkl)

@@ -4,7 +4,6 @@ import anndata as ad
 import warnings
 from typing import List, Dict
 
-from .config import Config
 from .parse_params import Params
 
 def get_marker_genes(adata: ad.AnnData,

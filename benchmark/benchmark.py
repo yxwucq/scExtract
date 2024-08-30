@@ -83,9 +83,10 @@ def ontology_pairwise_similarity(obo_id1: Optional[str],
 
 def benchmark_annotation(adata_path : str,
                          true_group_key: str,
+                         config_path: str = 'config.ini',
                          predict_group_key: Optional[str] = None,
                          method: str = "embedding",
-                         config_path: Optional[str] = None,
+                         output_config_pkl: Optional[str] = None,
                          similarity_key: str = "similarity",
                          ontology: str = "cl",
                          result_metrics_path: str = None,
@@ -118,7 +119,7 @@ def benchmark_annotation(adata_path : str,
         predict_group_key_list = predict_group_key.split(',')
         similarity_key_list = similarity_key.split(',')
 
-        with open(config_path, 'rb') as f:
+        with open(output_config_pkl, 'rb') as f:
             config = pickle.load(f)
         
         ari_list = []
@@ -143,12 +144,12 @@ def benchmark_annotation(adata_path : str,
             
             # get cell type embedding by llm
             if not all([x in config.embedding_dict.keys() for x in predict_cell_type_list]):
-                embedding_list = get_cell_type_embedding_by_llm(predict_cell_type_list)
+                embedding_list = get_cell_type_embedding_by_llm(predict_cell_type_list, config_path=config_path)
                 for i in range(len(predict_cell_type_list)):
                     config.embedding_dict[predict_cell_type_list[i]] = embedding_list[i]
             
             if not all([x in config.embedding_dict.keys() for x in true_cell_type_list]):
-                embedding_list = get_cell_type_embedding_by_llm(true_cell_type_list)
+                embedding_list = get_cell_type_embedding_by_llm(true_cell_type_list, config_path=config_path)
                 for i in range(len(true_cell_type_list)):
                     config.embedding_dict[true_cell_type_list[i]] = embedding_list[i]       
 
@@ -182,7 +183,7 @@ def benchmark_annotation(adata_path : str,
 
 def benchmark_annotation_ols(adata_path : str,
                          true_group_key: str,
-                         predict_group_key: str = None,
+                         predict_group_key: Optional[str] = None,
                          ontology: str = "cl",
                          method: str = "ols_api",
                          similarity_key: str = "similarity",

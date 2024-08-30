@@ -60,6 +60,7 @@ def preprocess_merged_dataset(adata_all: ad.AnnData) -> ad.AnnData:
 
 def create_prior_similarity_matrix(df_raw: pd.DataFrame,
                                    prior_method: str,
+                                   config_path : str = 'config.ini',
                                    embedding_dict_path: Optional[str] = None) -> pd.DataFrame:
     
     similarity_matrix = np.zeros((len(df_raw), len(df_raw)))
@@ -98,7 +99,7 @@ def create_prior_similarity_matrix(df_raw: pd.DataFrame,
     
     elif prior_method == 'llm':
         ct = df_raw.index.str.split('_').str[1].tolist()
-        emb = get_cell_type_embedding_by_llm(ct)
+        emb = get_cell_type_embedding_by_llm(ct, config_path)
         emb = np.array(emb)
         emb_norm = np.linalg.norm(emb, axis = 1)
         similarity_matrix = np.dot(emb, emb.T) / np.outer(emb_norm, emb_norm)
@@ -166,6 +167,7 @@ def normalize_connectivities(df_raw: pd.DataFrame,
 def integrate_processed_datasets(file_list: List[str],
                                  method: str, # 'cellhint' or 'scExtract'
                                  output_path: str,
+                                 config_path : str = 'config.ini',
                                  prior_weight: Optional[float] = 0.5,
                                  prior_method: Optional[str] = 'ontology', # 'ontology' or 'llm'
                                  alignment_path: Optional[str] = None,
@@ -208,7 +210,7 @@ def integrate_processed_datasets(file_list: List[str],
         df_raw.index = adata_all.obs['dataset_cell_type'].cat.categories
         
         logging.info("Creating prior similarity matrix from automatic annotation.")
-        prior_similarity_matrix_df = create_prior_similarity_matrix(df_raw, prior_method, embedding_dict_path)
+        prior_similarity_matrix_df = create_prior_similarity_matrix(df_raw, config_path, prior_method, embedding_dict_path)
         adata_all.uns['prior_similarity_matrix_df'] = prior_similarity_matrix_df.copy()
         adata_all.uns['raw_similarity_matrix_df'] = df_raw.copy()
         

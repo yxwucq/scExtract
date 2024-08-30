@@ -14,13 +14,14 @@ from .agent import Claude3, Openai, get_cell_type_embedding_by_llm
 from .preprocess import filter, preprocess, clustering
 from .annotation import get_marker_genes, annotate, query_datasets, simple_annotate
 from .parse_params import Params 
-from .config import Config
 
+import configparser
 from utils.utils import convert_ensembl_to_symbol
 
-def auto_extract(adata_path: str, 
+def auto_extract(adata_path: str,
                  pdf_path: str, 
                  output_dir: str,
+                 config_path: str = 'config.ini',
                  output_name: str = 'processed.h5ad',
                  output_log: str = 'auto_extract.log',
                  output_config_pkl: str = 'config.pkl',
@@ -31,24 +32,26 @@ def auto_extract(adata_path: str,
     """
     
     logging.basicConfig(level=logging.INFO)
+    if not os.path.exists(config_path):
+        raise FileNotFoundError(f"Config file {config_path} not found. Please run 'init' to create a config file.")
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     if os.path.exists(os.path.join(output_dir, output_log)):
         os.remove(os.path.join(output_dir, output_log))
+
+    config = configparser.ConfigParser()
+    config.read(config_path)
+
     file_handler = logging.FileHandler(os.path.join(output_dir, output_log))
     formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
     file_handler.setFormatter(formatter)
     logging.getLogger().addHandler(file_handler)
     
     f = Figlet(font='slant')
-    
-    # Print "AutoExtract" in fancy font
     logging.info('\n'+f.renderText('scExtract')+ '\n')
-
     colorama.init()
-
-    logging.info(colored(f"Using {Config().MODEL} as extraction model", color='cyan'))
-    logging.info(colored(f"Using {Config().TOOL_MODEL} as tool model", color='cyan'))
+    logging.info(colored(f"Using {config['API']['MODEL']} as extraction model", color='cyan'))
+    logging.info(colored(f"Using {config['API']['TOOL_MODEL']} as tool model", color='cyan'))
     
     # Load AnnData object
     logging.info(f'Loading AnnData object from {adata_path}')
@@ -69,20 +72,20 @@ subsetting the data to a smaller size.", color='light_red'))
     
     logging.info(colored('1. Extracting information from literature', color='cyan', attrs=['bold']))
     
-    if 'openai' in Config().TYPE:
+    if 'openai' in config['API']['TYPE']:
         claude_agent = Openai(pdf_path)
-    elif 'claude' in Config().TYPE:
+    elif 'claude' in config['API']['TYPE']:
         claude_agent = Claude3(pdf_path)
     else:
-        raise ValueError(f"Model {Config().MODEL} not supported.")
+        raise ValueError(f"Model {config['API']['MODEL']} not supported.")
     
     claude_agent.initiate_propmt()
 
     # Filter and preprocess data
-    params = Params()
+    params = Params(config_path)
     
     logging.info(colored('2. Filtering and preprocessing data', color='cyan', attrs=['bold']))
-    filter_response = claude_agent.chat(Config().get_prompt('FILTER_PROMPT'))
+    filter_response = claude_agent.chat(params.get_prompt('FILTER_PROMPT'))
     # time.sleep(5)
     logging.info(filter_response)
     params.parse_response(filter_response)
@@ -92,7 +95,7 @@ subsetting the data to a smaller size.", color='light_red'))
     adata.raw = adata
 
     logging.info(colored('3. Preprocessing data', color='cyan', attrs=['bold']))
-    preprocess_response = claude_agent.chat(Config().get_prompt('PREPROCESSING_PROMPT'))
+    preprocess_response = claude_agent.chat(params.get_prompt('PREPROCESSING_PROMPT'))
     # time.sleep(5)
     logging.info(preprocess_response)
     params.parse_response(preprocess_response)
@@ -100,13 +103,13 @@ subsetting the data to a smaller size.", color='light_red'))
     
     # Clustering
     logging.info(colored('4. Clustering data', color='cyan', attrs=['bold']))
-    clustering_response = claude_agent.chat(Config().get_prompt('CLUSTERING_PROMPT'))
+    clustering_response = claude_agent.chat(params.get_prompt('CLUSTERING_PROMPT'))
     # time.sleep(5)
     logging.info(clustering_response)
     params.parse_response(clustering_response)
     adata = clustering(adata, params)
     
-    if Config().CLEANUP:
+    if config['OPTIONS'].getboolean('CLEAN_INTERMEDIATE_MESSAGES'):
         logging.info(colored('Cleaning up intermediate messages', color='cyan', attrs=['bold']))
         claude_agent.clear_intermediate_messages()
     
@@ -116,7 +119,7 @@ subsetting the data to a smaller size.", color='light_red'))
     logging.info(colored(marker_genes, color='yellow'))
     
     if benchmark_no_context_key is not None:
-        benchmark_no_context_prompt = Config().get_tool_prompt('NO_CONTEXT_ANNOTATION_PROMPT').replace('Some can be a mixture of multiple cell types.',
+        benchmark_no_context_prompt = params.get_tool_prompt('NO_CONTEXT_ANNOTATION_PROMPT').replace('Some can be a mixture of multiple cell types.',
                                                                                         'Some can be a mixture of multiple cell types.' + str(marker_genes))
         benchmark_no_context_summary = claude_agent._tool_retrieve(messages=[{"role": "user", "content": benchmark_no_context_prompt}])
         logging.info(colored(benchmark_no_context_summary, color='green'))
@@ -124,7 +127,7 @@ subsetting the data to a smaller size.", color='light_red'))
         adata = simple_annotate(adata, no_context_annotation_dict, params, benchmark_no_context_key)
     
     starting_part = 'This is the output of the top 10 marker genes for each cluster:'
-    annotate_prompt = Config().get_prompt('ANNOTATION_PROMPT').replace(f"{starting_part}", 
+    annotate_prompt = params.get_prompt('ANNOTATION_PROMPT').replace(f"{starting_part}", 
                                                                        f"{starting_part}\n{marker_genes}")
     
     # time.sleep(5)
@@ -138,7 +141,7 @@ subsetting the data to a smaller size.", color='light_red'))
         # time.sleep(30)
         adata = annotate(adata, annotation_dict, params, final=False)
         logging.info(colored('6. Reannotating clusters', color='cyan', attrs=['bold']))
-        query_response = claude_agent.chat(Config().get_prompt('REVIEW_PROMPT'))
+        query_response = claude_agent.chat(params.get_prompt('REVIEW_PROMPT'))
         logging.info(query_response)
         params.parse_response(query_response)
         if len(params['genes_to_query']) > 0:
@@ -146,12 +149,12 @@ subsetting the data to a smaller size.", color='light_red'))
             query_genes_exp_dict = query_datasets(adata, params)
             logging.info('Gene expression data queried:' + str(query_genes_exp_dict))
             if len(query_genes_exp_dict) > 0:
-                smmary_message = Config().get_tool_prompt('SUMMARY_QUERY_EXPRESSION')
+                smmary_message = params.get_tool_prompt('SUMMARY_QUERY_EXPRESSION')
                 smmary_message += str(query_genes_exp_dict)
                 query_genes_exp_dict_summary = claude_agent._tool_retrieve(messages=[{"role": "user", "content": smmary_message}])
                 logging.info(colored(query_genes_exp_dict_summary, color='yellow'))
                 middle_start = 're-annotate the clusters into cell types using a dictionary format:'
-                reannotate_prompt = Config().get_prompt('REANNOTATION_PROMPT').replace(f"{middle_start}", 
+                reannotate_prompt = params.get_prompt('REANNOTATION_PROMPT').replace(f"{middle_start}", 
                                                                                        f"{middle_start}\n{query_genes_exp_dict_summary}")
                 # time.sleep(30)
                 reannotate_response = claude_agent.chat(reannotate_prompt, max_tokens=2000)
@@ -163,12 +166,12 @@ subsetting the data to a smaller size.", color='light_red'))
         else:
             logging.info(colored('No genes to query.', color='yellow'))
     
-    if Config().CONVERT_EMBEDDING:
+    if config['API'].getboolean('CONVERT_EMBEDDING'):
         params.embedding_dict = {}
         for key in adata.obs.columns:
             if key in ['leiden', 'louvain', 'tissue', 'disease', 'developmental_stage']:
                 words_list = list(adata.obs[key].unique())
-                embedding_list = get_cell_type_embedding_by_llm(words_list)
+                embedding_list = get_cell_type_embedding_by_llm(words_list, config_path=config_path)
                 for i in range(len(words_list)):
                     params.embedding_dict[words_list[i]] = embedding_list[i]
     
