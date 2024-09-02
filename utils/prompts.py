@@ -25,9 +25,9 @@ class Prompts:
         
         OUTPUT_FORMAT(description of the parameters is after the colon, do not include the description in the output):
         title: {str, title of the article}
-        author: {str, family name of the first author}
+        author: {str, family name of the first author plus 'et al.'}
         magazine_name: {str, name of the magazine}
-        sample_description: {str, short description of the samples and their characteristics}
+        sample_description: {str, short description of the samples used in scRNA-seq and their characteristics}
         total_cells: {int, total number of single cells analyzed}
         raw_data_source: {str, accession number or link to the raw data, e.g., GEO, SRA, etc.}
         

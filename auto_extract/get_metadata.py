@@ -10,6 +10,26 @@ from tqdm import tqdm
 from .agent import Claude3, Openai
 from .parse_params import Params
 
+def wrap_string(long_string, max_line_length=20):
+    words = long_string.split()
+    lines = []
+    current_line = ""
+
+    for word in words:
+        if len(current_line) + len(word) + 1 <= max_line_length:
+            if current_line:
+                current_line += " " + word
+            else:
+                current_line = word
+        else:
+            lines.append(current_line)
+            current_line = word
+
+    if current_line:
+        lines.append(current_line)
+
+    return "\n".join(lines)
+
 def get_metadata_in_pdf(pdf_list: List[str],
                         output_dir: str = '.',
                         initiation_samples: bool = True,
@@ -74,5 +94,7 @@ def get_metadata_in_pdf(pdf_list: List[str],
     
     print(f"Saving metadata to {os.path.join(output_dir, output_name)}...")
     metadata.to_csv(os.path.join(output_dir, output_name), index=False)
-    metadata = metadata.map(lambda x: str(x)[:10] + '...' if len(str(x)) > 10 else str(x))
+    metadata = metadata.map(lambda x: wrap_string(str(x), 20))
+    metadata.drop('sample_number', axis=1, inplace=True)
+    metadata.drop('abstract', axis=1, inplace=True)
     print(tabulate(metadata, headers='keys', tablefmt='fancy_grid'))
