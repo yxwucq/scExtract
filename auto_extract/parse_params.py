@@ -10,11 +10,11 @@ class Params:
         config = configparser.ConfigParser()
         config.read(config_path)
         self.default_params = deepcopy(config['DEFAULT_PARAMS'])
+        self.params = format_params(self.default_params)
         self.list_type_params = Prompts().LIST_TYPE_PARAMS
         self.int_type_params = Prompts().INT_TYPE_PARAMS
         self.bool_type_params = Prompts().BOOL_TYPE_PARAMS
         self.categorical_params = Prompts().CATEGORICAL_PARAMS
-        self.params = dict(self.default_params)
     
     @property
     def get_params(self):
@@ -112,13 +112,14 @@ class Params:
             # list parameters
             elif key in self.list_type_params:
                 if value== '[]':
-                    self.params[key] = []
+                    pass
                 else:
                     value = value.replace('[', '').replace(']', '').replace("'", "").split(',')
-                    self.params[key] = [item.strip() for item in value]
-            
+                    self.params[key] = self.params[key] + [item.strip() for item in value]
+
+            # string parameters
             else:
-                raise ValueError(f'Invalid key queried: {key}')
+                self.params[key] = value
             
     def __str__(self):
         return str(self.params)
@@ -134,3 +135,36 @@ class Params:
     
     def get_tool_prompt(self, prompt_name: str) -> str:
         return Prompts().get_tool_prompt(prompt_name)
+
+def format_params(default_params) -> dict:
+    formatted_params = {}
+    for key, value in default_params.items():
+        if value == 'None':
+            formatted_params[key] = None
+        elif value.lower() == 'true':
+            formatted_params[key] = True
+        elif value.lower() == 'false':
+            formatted_params[key] = False
+        elif value == '':
+            formatted_params[key] = []
+        elif ',' in value:
+            formatted_params[key] = value.split(',')
+        else:
+            value = value.strip()
+            try:
+                formatted_params[key] = int(value)
+            except ValueError:
+                try:
+                    formatted_params[key] = float(value)
+                except ValueError:
+                    formatted_params[key] = value
+                
+    formatted_params['title'] = 'N/A'
+    formatted_params['author'] = 'N/A'
+    formatted_params['magazine_name'] = 'N/A'
+    formatted_params['sample_description'] = 'N/A'
+    formatted_params['total_cells'] = 'N/A'
+    formatted_params['raw_data_source'] = 'N/A'
+    formatted_params['summary'] = 'N/A'
+    
+    return formatted_params

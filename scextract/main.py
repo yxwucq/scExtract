@@ -18,6 +18,13 @@ def main():
         from utils.init_project import init_project
         init_project(config_path=args.config_path,
                      overwrite=args.overwrite)
+    elif args.subcommand == 'get_metadata':
+        from auto_extract.get_metadata import get_metadata_in_pdf
+        get_metadata_in_pdf(pdf_list=args.pdf_list,
+                            output_dir=args.output_dir,
+                            initiation_samples=args.initiation_samples,
+                            config_path=args.config_path,
+                            output_name=args.output_name)
     elif args.subcommand == 'benchmark':
         from benchmark.benchmark import benchmark_annotation
         benchmark_annotation(adata_path=args.adata_path,

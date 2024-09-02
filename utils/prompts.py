@@ -18,6 +18,44 @@ class Prompts:
         OUTPUT_FORMAT: 'FINISHED' when you have finished extracting the information,
         Here is the article:\n""",
         
+        'GET_METADATA_PROMPT': """Please extract the basic information and metadata of study samples from the article, 
+        including the title, author, magazine name, number of samples and their characteristics, total number of single cells analyzed, raw data source,
+        replace the placeholders {} in the following parameters with the values used in the article. If no specific value is described in the article,
+        use 'N/A' at the corresponding position. 
+        
+        OUTPUT_FORMAT(description of the parameters is after the colon, do not include the description in the output):
+        title: {str, title of the article}
+        author: {str, family name of the first author}
+        magazine_name: {str, name of the magazine}
+        sample_description: {str, short description of the samples and their characteristics}
+        total_cells: {int, total number of single cells analyzed}
+        raw_data_source: {str, accession number or link to the raw data, e.g., GEO, SRA, etc.}
+        
+        This is an example response:
+        <example>        
+        <response>
+        title: Single-cell RNA-seq analysis of human liver immune cells reveals a novel subset of liver-resident natural killer cells
+        author: Wu et al.
+        magazine_name: Nature Communications
+        sample_description: liver immune cells from 5 healthy donors and 3 patients with chronic hepatitis B
+        total_cells: 10000
+        raw_data_source: GSE123456
+        </response>
+        </example>""",
+        
+        'SUMMARY_ARTICLE_PROMPT': """Please summarize the article in a few sentences, including the main findings,
+        the methodology used, and any key insights or conclusions. Summarize the article within 5 sentences.
+        
+        OUTPUT_FORMAT: 
+        summary: {str, summary of the article}
+        
+        This is an example response:
+        <example>
+        <response>
+        summary: The article presents a single-cell RNA-seq analysis of human liver immune cells...
+        </response>
+        </example>""",
+        
         'FILTER_PROMPT': """Following the processing workflow described in the article for single-cell datasets, 
         replace the placeholders {} in the following preprocessing parameters with the values used in the article. 
         If no specific value is described in the article, use 'default' at the corresponding position. 
@@ -34,7 +72,7 @@ class Prompts:
         
         reasoning: {str, reasoning for the filtering parameters}
         
-        This is an example of how to extract filter_cells_min_genes, other arguments are extracted in the same way：
+        This is an example of how to extract filter_cells_min_genes, other arguments are extracted in the same way:
         <example>
         <text>
         We filter out cells expressing fewer than 300 genes
@@ -65,7 +103,7 @@ class Prompts:
         
         reasoning: {str, reasoning for the preprocessing parameters}
         
-        This is an example of how to extract highly_variable_genes_num, other arguments are extracted in the same way：
+        This is an example of how to extract highly_variable_genes_num, other arguments are extracted in the same way:
         <example>
         <text>
         We use function FindVariableFeatures to identify 2000 highly variable genes
@@ -91,7 +129,7 @@ class Prompts:
         'ANNOTATION_PROMPT': """This is the output of the top 10 marker genes for each cluster:
         
         Based on gene expression and the detailed discussion from the article, annotate these clusters into cell types using a dictionary format.
-        Please provide the 'cell type', 'certainty', 'source', 'tissue', and reasoning for each cluster.
+        Please provide the 'cell type', 'certainty', 'source' and reasoning for each cluster.
         You may annotate different groups with the same cell type. You should try to assign a **cell ontology** label to each cluster (e.g. B cell, T cell, etc.),
         with modification to make your annotations more concordant with the original paper  (e.g. 'CD4+ T cell' or 'T cell 2').
         If you cannot tell the cell type, name it as 'Unknown'. Be sure to provide reasoning for the annotation.
@@ -101,17 +139,14 @@ class Prompts:
         annotation_dict: {0: [cell_type, 
                 certainty, (value chosen from [Low, Medium, High])
                 source, (value chosen from [Article-defined, Knowledge-based])
-                tissue, (value chosen from [Brain, Liver, Kidney, Heart, Lung...])
-                disease, (value chosen from [Healthy, Cancer, Alzheimer, Parkinson...])
-                developmental_stage], (value chosen from [Embryonic, Fetal, Neonatal, Adult...])
                 ...}. "
                 
         reasoning: {str, reasoning for the re-annotation}
         
         <example>
         <response>
-        annotation_dict: {0: ['T cell', 'High', 'Article-defined', 'Blood', 'Healthy', 'Adult'],
-                            1: ['B cell', 'Medium', 'Knowledge-based', 'Blood', 'Healthy', 'Adult']}
+        annotation_dict: {0: ['T cell', 'High', 'Article-defined'],
+                            1: ['B cell', 'Medium', 'Knowledge-based']}
                             
         reasoning: The expression of CD3E and CD3D is high in cluster 0, which is a typical marker of T cells. The expression of CD19 is medium high in cluster 1, which is a typical marker of B cells, but not as high as in cluster 2
         </response>
@@ -147,17 +182,14 @@ class Prompts:
         annotation_dict: {0: [cell_type, 
                 certainty, (value chosen from [Low, Medium, High])
                 source, (value chosen from [Article-defined, Knowledge-based])
-                tissue, (value chosen from [Brain, Liver, Kidney, Heart, Lung...])
-                disease, (value chosen from [Healthy, Cancer, Alzheimer, Parkinson...])
-                developmental_stage], (value chosen from [Embryonic, Fetal, Neonatal, Adult...])
                 ...}. "
                 
         reasoning: {str, reasoning for the re-annotation}
         
         <example>
         <response>
-        annotation_dict: {0: ['T cell', 'High', 'Article-defined', 'Blood', 'Healthy', 'Adult'],
-                            1: ['B cell', 'Medium', 'Knowledge-based', 'Blood', 'Healthy', 'Adult']}
+        annotation_dict: {0: ['T cell', 'High', 'Article-defined'],
+                            1: ['B cell', 'Medium', 'Knowledge-based']}
                             
         reasoning: The expression of CD3E and CD3D is high in cluster 0, which is a typical marker of T cells. The expression of CD19 is medium high in cluster 1, which is a typical marker of B cells, but not as high as in cluster 2
         </response>

@@ -21,6 +21,14 @@ def parse_args():
     init_parser.add_argument('--config_path', '-f', type=str, default='config.ini', help='Path to save the config file.')
     init_parser.add_argument('--overwrite', '-o', action='store_true', help='Overwrite the existing config file.')
     
+    get_metadata_parser = subparsers.add_parser('get_metadata', help='Extract metadata from PDFs.')
+    
+    get_metadata_parser.add_argument('--pdf_list', '-i', type=str, nargs='+', required=True, help='List of paths to the PDF files.')
+    get_metadata_parser.add_argument('--config_path', '-f', type=str, default='config.ini', help='System config file path.')
+    get_metadata_parser.add_argument('--output_dir', '-d', type=str, default='.', help='Directory to save the metadata.')
+    get_metadata_parser.add_argument('--output_name', '-o', type=str, default='metadata.csv', help='Name of the output metadata file.')
+    get_metadata_parser.add_argument('--initiation_samples', '-s', action='store_true', help='Whether to initiate projects')
+    
     benchmark_parser = subparsers.add_parser('benchmark', help='Benchmark annotation results using true labels.')
     
     benchmark_parser.add_argument('--adata_path', '-i', type=str, required=True, help='Path to the processed data in AnnData format.')
