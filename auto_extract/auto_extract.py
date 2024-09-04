@@ -91,9 +91,6 @@ subsetting the data to a smaller size.", color='light_red'))
     params.parse_response(filter_response)
     adata = filter(adata, params)
 
-    # Save filtered AnnData object
-    adata.raw = adata
-
     logging.info(colored('3. Preprocessing data', color='cyan', attrs=['bold']))
     preprocess_response = claude_agent.chat(params.get_prompt('PREPROCESSING_PROMPT'))
     # time.sleep(5)

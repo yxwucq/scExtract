@@ -21,7 +21,7 @@ def merge_datasets(file_list: List[str]) -> ad.AnnData:
         adata = sc.read(file)
         print(f"Reading {file}, shape: {adata.shape}")
         sample_name = file.split('/')[-1].replace('_processed.h5ad', '')
-        adata.obs['dataset'] = sample_name.replace('_', ' ')
+        adata.obs['Dataset'] = sample_name.replace('_', ' ')
         
         raw_adata = ad.AnnData(X=csr_matrix(adata.raw.X), obs=adata.obs, var=adata.var)
         if 'leiden' in raw_adata.obs.columns:
@@ -46,11 +46,9 @@ def preprocess_merged_dataset(adata_all: ad.AnnData) -> ad.AnnData:
     """
     Preprocess the merged dataset. Should be raw counts data with dataset and cell_type annotations.
     """
-    sc.pp.normalize_total(adata_all, target_sum = 1e4)
-    sc.pp.log1p(adata_all)
     adata_all.raw = adata_all
-    sc.pp.highly_variable_genes(adata_all, batch_key = 'dataset', subset = True)
-    sc.pp.scale(adata_all, max_value = 10)
+    sc.pp.highly_variable_genes(adata_all, batch_key = 'Dataset', subset = True)
+    sc.pp.scale(adata_all)
     sc.tl.pca(adata_all)
     # sc.external.pp.harmony_integrate(adata_all, key = 'dataset')
     sc.pp.neighbors(adata_all, use_rep='X_pca')
@@ -186,11 +184,11 @@ def integrate_processed_datasets(file_list: List[str],
     if method == 'cellhint':
         if alignment_path is None:
             alignment_path = output_path.replace('.h5ad', '.pkl')
-        alignment = cellhint.harmonize(adata_all, dataset = 'dataset', cell_type = 'cell_type', use_rep = 'X_pca', prior_path = embedding_dict_path, prior_weight = prior_weight, **kwargs)
+        alignment = cellhint.harmonize(adata_all, dataset = 'Dataset', cell_type = 'cell_type', use_rep = 'X_pca', prior_path = embedding_dict_path, prior_weight = prior_weight, **kwargs)
         alignment.write(alignment_path)
     
     elif method == 'scExtract':
-        adata_all.obs['dataset_cell_type'] = (adata_all.obs['dataset'].astype(str) + '_' + adata_all.obs['cell_type'].astype(str)).astype('category')
+        adata_all.obs['dataset_cell_type'] = (adata_all.obs['Dataset'].astype(str) + '_' + adata_all.obs['cell_type'].astype(str)).astype('category')
     
         logging.info("Running PAGA for the merged dataset.")
         sc.pp.neighbors(adata_all, use_rep='X_pca')

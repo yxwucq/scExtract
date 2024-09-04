@@ -1,17 +1,51 @@
+from typing import Dict, Any
+import logging
+
 import scanpy as sc
 import numpy as np
-from scipy.sparse import csc_matrix
+from scipy.sparse import csr_matrix
 import anndata as ad
 import warnings
 
 from .parse_params import Params
+
+def is_normalized_and_log1p(expression_matrix: np.ndarray) -> Dict[str, bool]:
+    """
+    Check if the expression matrix is normalized to a specific total counts per cell and log1p transformed.
+
+    Parameters:
+    expression_matrix (np.ndarray): The expression matrix to check.
+
+    Returns:
+    dict: A dictionary with keys 'normalized' and 'log1p' indicating whether the matrix is normalized and log1p transformed.
+    """
+    result = {'normalized': False, 'log1p': False}
+
+    # Check if the matrix is normalized to a specific total counts per cell
+    total_counts = expression_matrix.sum(axis=1)
+    total_counts_per_cell = expression_matrix.sum(axis=1).mean()
+    if np.allclose(total_counts, total_counts_per_cell, atol=100):  # Allowing some tolerance
+        result['normalized'] = True
+
+    # Check if the matrix is log1p transformed
+    # Log1p transformed data should have most values between 0 and a small positive number
+    if np.all(expression_matrix >= 0) and np.all(expression_matrix < 10):
+        result['log1p'] = True
+
+    return result
 
 def filter(adata: ad.AnnData, 
            params: Params,
            ) -> ad.AnnData:
 
     if type(adata.X) is np.ndarray: # possible nan value
-        adata.X = csc_matrix(np.nan_to_num(adata.X).copy())
+        adata.X = csr_matrix(np.nan_to_num(adata.X).copy())
+
+    check_result = is_normalized_and_log1p(adata.X.toarray())
+    if check_result['normalized'] or check_result['log1p']: 
+        logging.warn("The expression matrix is already normalized and/or log1p transformed. \
+                       The filtering steps will be skipped.")
+        return adata
 
     # Filter cells
     if params['filter_cells_min_genes'] is not None:
@@ -43,20 +77,31 @@ def preprocess(adata: ad.AnnData,
     
     adata = adata.copy() # avoid inplace modification
     adata.layers['counts'] = adata.X.copy()
-    
+
+    check_result = is_normalized_and_log1p(adata.X.toarray())
+    if check_result['log1p']:
+        check_result['normalized'] = True # if log1p transformed, it is normalized
+
     # Normalize total target sum
-    if params['normalize_total_target_sum'] is not None:
+    if params['normalize_total_target_sum'] is not None and not check_result['normalized']:
         sc.pp.normalize_total(adata, target_sum=params['normalize_total_target_sum'])
+    elif check_result['normalized']:
+        logging.warn("The expression matrix is already normalized. The normalization step will be skipped.")
     
     # Log1p transform
     if params['log1p_transform']:
         sc.pp.log1p(adata)
+    elif check_result['log1p']:
+        logging.warn("The expression matrix is already log1p transformed. The log1p transformation step will be skipped.")
         
     # Batch correction
     # if params['batch_correction']:
     #     # key is should be specified TODO
     #     sc.pp.combat(adata, key='Batch')
-    
+
+    # Save log1p transformed data
+    adata.raw = adata
+
     # Highly variable genes
     sc.pp.highly_variable_genes(adata, n_top_genes=params['highly_variable_genes_num'])
     
