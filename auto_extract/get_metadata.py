@@ -56,9 +56,9 @@ def get_metadata_in_pdf(pdf_list: List[str],
         print(f"Extracting {i}/{len(pdf_list)}...")
         print(f"Extracting metadata from {pdf_path}...")
         if 'openai' in config['API']['TYPE']:
-            claude_agent = Openai(pdf_path)
+            claude_agent = Openai(pdf_path, config_path)
         elif 'claude' in config['API']['TYPE']:
-            claude_agent = Claude3(pdf_path)
+            claude_agent = Claude3(pdf_path, config_path)
         else:
             raise ValueError(f"Model {config['API']['MODEL']} not supported.")
         

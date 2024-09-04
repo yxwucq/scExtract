@@ -73,9 +73,9 @@ subsetting the data to a smaller size.", color='light_red'))
     logging.info(colored('1. Extracting information from literature', color='cyan', attrs=['bold']))
     
     if 'openai' in config['API']['TYPE']:
-        claude_agent = Openai(pdf_path)
+        claude_agent = Openai(pdf_path, config_path)
     elif 'claude' in config['API']['TYPE']:
-        claude_agent = Claude3(pdf_path)
+        claude_agent = Claude3(pdf_path, config_path)
     else:
         raise ValueError(f"Model {config['API']['MODEL']} not supported.")
     

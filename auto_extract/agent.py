@@ -89,8 +89,8 @@ class BaseClient(ABC):
         pass
 
 class Openai(BaseClient):
-    def __init__(self, pdf_path: str = None):
-        super().__init__(pdf_path)
+    def __init__(self, pdf_path: str = None, config_path: str = 'config.ini'):
+        super().__init__(pdf_path, config_path)
         self.create_client()
 
     def create_client(self):
@@ -150,8 +150,8 @@ class Openai(BaseClient):
         return completion.choices[0].message.content
     
 class Claude3(BaseClient):
-    def __init__(self, pdf_path: str = None):
-        super().__init__(pdf_path)
+    def __init__(self, pdf_path: str = None, config_path: str = 'config.ini'):
+        super().__init__(pdf_path, config_path)
         self.create_client()
         
     def create_client(self):
