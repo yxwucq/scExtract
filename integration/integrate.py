@@ -5,6 +5,7 @@ import cellhint
 from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import minimum_spanning_tree
 import scanpy as sc
+from sklearn.neighbors import KernelDensity
 import pandas as pd
 import numpy as np
 import logging
@@ -13,7 +14,10 @@ import pickle
 from benchmark.benchmark import request_ols, ontology_pairwise_similarity
 from auto_extract.agent import get_cell_type_embedding_by_llm
 
-def merge_datasets(file_list: List[str]) -> ad.AnnData:
+def merge_datasets(file_list: List[str],
+                   downsample: Optional[bool] = False,
+                   target_cells_per_label: Optional[int] = 1000
+                   ) -> ad.AnnData:
     """
     Merge multiple datasets into one.
     """
@@ -30,6 +34,10 @@ def merge_datasets(file_list: List[str]) -> ad.AnnData:
             raw_adata.obs['cell_type'] = raw_adata.obs['louvain'].astype(str).str.replace('_', ' ').copy()
         else:
             raise ValueError('No clustering result in the dataset')
+        
+        if downsample:
+            raw_adata = density_weighted_stratified_sampling(raw_adata, target_cells_per_label)
+        
         if 'adata_all' not in locals():
             adata_all = raw_adata.copy()
         else:
@@ -161,7 +169,44 @@ def normalize_connectivities(df_raw: pd.DataFrame,
                 df_raw.loc[idx1, idx2] = (df_raw.loc[idx1, idx2].values.T / sum_idx1_idx2.values).T.copy()
         
         return df_raw
+
+def density_weighted_stratified_sampling(adata: ad.AnnData,
+                                         target_cells_per_label: int = 1000,
+                                         bandwidth: float = 0.5) -> ad.AnnData:
+    """
+    Subsample the dataset by density-weighted stratified
+    """
+    
+    def compute_kde_weights(data, bandwidth):
+        kde = KernelDensity(kernel='gaussian', bandwidth=bandwidth).fit(data)
+        log_dens = kde.score_samples(data)
+        # Calculate weights
+        weights = 1 / np.exp(log_dens)
+        # Normalize weights
+        weights /= np.sum(weights)
+        return weights
+
+    subsampled_data = []
+    for label in adata.obs['cell_type'].unique():
+        label_data = adata[adata.obs['cell_type'] == label].copy()
         
+        if len(label_data) <= target_cells_per_label:
+            subsampled_data.append(label_data)
+        else:
+            # Compute weights
+            weights = compute_kde_weights(label_data.obsm['X_pca'], bandwidth)
+            
+            # Sample from the label data using the weights
+            indices = np.random.choice(
+                len(label_data), 
+                size=target_cells_per_label, 
+                replace=False, 
+                p=weights
+            )
+            subsampled_data.append(label_data[indices])
+    
+    return sc.concat(subsampled_data)
+
 def integrate_processed_datasets(file_list: List[str],
                                  method: str, # 'cellhint' or 'scExtract'
                                  output_path: str,
@@ -170,11 +215,13 @@ def integrate_processed_datasets(file_list: List[str],
                                  prior_method: Optional[str] = 'ontology', # 'ontology' or 'llm'
                                  alignment_path: Optional[str] = None,
                                  embedding_dict_path: Optional[str] = None,
+                                 downsample: Optional[bool] = False,
+                                 downsample_cells_per_label: Optional[int] = 1000,
                                  **kwargs) -> None:
     
     logging.basicConfig(level=logging.INFO)
     logging.info(f"Integrating {len(file_list)} datasets using {method} method.")
-    adata_all = merge_datasets(file_list)
+    adata_all = merge_datasets(file_list, downsample, downsample_cells_per_label)
     adata_all.write(output_path) # save the merged dataset
     
     logging.info(f"Merged dataset shape: {adata_all.shape}")

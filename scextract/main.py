@@ -62,7 +62,9 @@ def main():
                                      prior_weight=args.prior_weight,
                                      prior_method=args.prior_method,
                                      alignment_path=args.alignment_path,
-                                     embedding_dict_path=args.embedding_dict_path)
+                                     embedding_dict_path=args.embedding_dict_path,
+                                     downsample=args.downsample,
+                                     downsample_cells_per_label=args.downsample_cells_per_label)
     
 if __name__ == '__main__':
     main()
