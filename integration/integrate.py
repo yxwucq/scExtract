@@ -1,7 +1,6 @@
 from typing import List, Optional
 from tqdm import tqdm
 import anndata as ad
-import cellhint
 from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import minimum_spanning_tree
 import scanpy as sc
@@ -68,78 +67,6 @@ def preprocess_merged_dataset(adata_all: ad.AnnData) -> ad.AnnData:
     sc.tl.umap(adata_all)
     
     return adata_all
-
-def create_prior_similarity_matrix(df_raw: pd.DataFrame,
-                                   prior_method: str,
-                                   config_path : str = 'config.ini',
-                                   embedding_dict_path: Optional[str] = None) -> pd.DataFrame:
-    
-    similarity_matrix = np.zeros((len(df_raw), len(df_raw)))
-    if prior_method == 'ontology':
-        ontology_mapping_dict = {}
-
-        for i in range(len(df_raw)):
-            manual_cell_type = df_raw.columns[i].split('_')[1]
-            manual_cell_type = manual_cell_type.strip('s')
-            if manual_cell_type in ontology_mapping_dict.keys():
-                continue
-            obd_id, obd_label = request_ols(manual_cell_type)
-            ontology_mapping_dict[manual_cell_type] = obd_id
-        
-        similarity_dict = {}
-        for i in tqdm(range(len(df_raw))):
-            for j in range(len(df_raw)):
-                
-                ct1 = df_raw.columns[i].split('_')[1].strip('s')
-                ct2 = df_raw.index[j].split('_')[1].strip('s')
-                
-                if (ct1, ct2) in similarity_dict.keys():
-                    similarity_matrix[i, j] = similarity_dict[(ct1, ct2)]
-                elif (ct2, ct1) in similarity_dict.keys():
-                    similarity_matrix[i, j] = similarity_dict[(ct2, ct1)]
-                else:
-                    obd_id1 = ontology_mapping_dict[ct1]
-                    obd_id2 = ontology_mapping_dict[ct2]
-                    if obd_id1 == 'None' or obd_id2 == 'None':
-                        similarity_matrix[i, j] = 0
-                    else:
-                        similarity_matrix[i, j] = ontology_pairwise_similarity(ontology_mapping_dict[ct1], ontology_mapping_dict[ct2])
-                    similarity_dict[(ct1, ct2)] = similarity_matrix[i, j]
-        similarity_matrix_df = pd.DataFrame(similarity_matrix, index = df_raw.index, columns = df_raw.columns)
-        return similarity_matrix_df
-    
-    elif prior_method == 'llm':
-        ct = df_raw.index.str.split('_').str[1].tolist()
-        emb = get_cell_type_embedding_by_llm(ct, config_path)
-        emb = np.array(emb)
-        emb_norm = np.linalg.norm(emb, axis = 1)
-        similarity_matrix = np.dot(emb, emb.T) / np.outer(emb_norm, emb_norm)
-        similarity_matrix_1 = (similarity_matrix - np.mean(similarity_matrix, axis=1)[:, np.newaxis]) / (1 - np.mean(similarity_matrix, axis=1)[:, np.newaxis])
-        similarity_matrix_1[similarity_matrix_1 < 0] = 0
-        similarity_matrix_2 = (similarity_matrix - np.mean(similarity_matrix, axis=1)[np.newaxis, :]) / (1 - np.mean(similarity_matrix, axis=1)[np.newaxis, :])
-        similarity_matrix_2[similarity_matrix_2 < 0] = 0
-        similarity_matrix = (similarity_matrix_1 + similarity_matrix_2) / 2
-        similarity_matrix_df = pd.DataFrame(similarity_matrix, index = df_raw.index, columns = df_raw.index)
-        return similarity_matrix_df
-    
-    elif prior_method == 'local':
-        if embedding_dict_path is None:
-            raise ValueError("Please provide the path to the cell type embedding dictionary.")
-        with open(embedding_dict_path, 'rb') as f:
-            embedding_dict = pickle.load(f)
-            emb_list = [embedding_dict[x] for x in df_raw.index.str.split('_').str[1]]
-            emb = np.array(emb_list)
-            similarity_matrix = np.dot(emb, emb.T)
-            similarity_matrix_1 = (similarity_matrix - np.mean(similarity_matrix, axis=1)[:, np.newaxis]) / (1 - np.mean(similarity_matrix, axis=1)[:, np.newaxis])
-            similarity_matrix_1[similarity_matrix_1 < 0] = 0
-            similarity_matrix_2 = (similarity_matrix - np.mean(similarity_matrix, axis=0)[np.newaxis, :]) / (1 - np.mean(similarity_matrix, axis=0)[np.newaxis, :])
-            similarity_matrix_2[similarity_matrix_2 < 0] = 0
-            similarity_matrix = (similarity_matrix_1 + similarity_matrix_2) / 2
-            similarity_matrix_df = pd.DataFrame(similarity_matrix, index = df_raw.index, columns = df_raw.index)
-            return similarity_matrix_df
-        
-    else:
-        raise ValueError("Unknown prior method.")
 
 def normalize_connectivities(df_raw: pd.DataFrame,
                             prior_similarity_matrix_df: pd.DataFrame,
@@ -213,63 +140,274 @@ def density_weighted_stratified_sampling(adata: ad.AnnData,
     return sc.concat(subsampled_data)
 
 def integrate_processed_datasets(file_list: List[str],
-                                 method: str, # 'cellhint' or 'scExtract'
+                                 method: str, # 'cellhint' or 'cellhint_prior'
                                  output_path: str,
                                  config_path : str = 'config.ini',
-                                 prior_weight: Optional[float] = 0.5,
-                                 prior_method: Optional[str] = 'ontology', # 'ontology' or 'llm'
+                                 prior_weight: Optional[float] = 0.1,
                                  alignment_path: Optional[str] = None,
                                  embedding_dict_path: Optional[str] = None,
                                  downsample: Optional[bool] = False,
                                  downsample_cells_per_label: Optional[int] = 1000,
                                  **kwargs) -> None:
     
+    """
+    Integrate multiple processed datasets
+    
+    Parameters
+    ----------
+    file_list : List[str]
+        List of paths to the processed data in AnnData format.
+    method : str
+        Method to use for integration. Support 'cellhint', 'cellhint_prior', 'scanorama_prior' and 'scExtract'.
+    output_path : str
+        Path to save the output file. If not specified, the input file will be overwritten.
+    config_path : str
+        System config file path.
+    prior_weight : float
+        Weight of the prior similarity matrix from automatic annotation.
+    alignment_path : str
+        Path to the output alignment file.
+    embedding_dict_path : str
+        Path to the cell type embedding dictionary. Only used for local. Can be generated by extract_celltype_embedding
+    downsample : bool
+        Whether to downsample the cells.
+    downsample_cells_per_label : int
+        Number of cells to downsample per label.
+    **kwargs : dict
+        Additional parameters for the scanorama_prior method.
+    """
+    
+    # check if dependencies are installed
+    if method == 'cellhint':
+        try:
+            import cellhint
+        except ImportError:
+            raise ImportError("Please install cellhint to use the cellhint method.")
+    elif method == 'cellhint_prior':
+        try:
+            import cellhint_prior
+        except ImportError:
+            raise ImportError("Please install cellhint_prior to use the cellhint_prior method.")
+    elif method == 'scanorama_prior':
+        try:
+            import scanorama_prior
+        except ImportError:
+            raise ImportError("Please install scanorama_prior to use the scanorama_prior method.")    
+    elif method == 'scExtract':
+        try:
+            import cellhint_prior
+        except ImportError:
+            raise ImportError("Please install cellhint_prior to use the cellhint method.")
+        try:
+            import scanorama_prior
+        except ImportError:
+            raise ImportError("Please install scanorama_prior to use the scExtract method.")
+    
     logging.basicConfig(level=logging.INFO)
     logging.info(f"Integrating {len(file_list)} datasets using {method} method.")
-    adata_all = merge_datasets(file_list, downsample, downsample_cells_per_label)
-    adata_all.write(output_path) # save the merged dataset
     
-    logging.info(f"Merged dataset shape: {adata_all.shape}")
-    adata_all = preprocess_merged_dataset(adata_all)
-    # sc.pl.umap(adata_all, color = 'dataset')
-    
-    if method == 'cellhint':
-        if alignment_path is None:
-            alignment_path = output_path.replace('.h5ad', '.pkl')
-        alignment = cellhint.harmonize(adata_all, dataset = 'Dataset', cell_type = 'cell_type', use_rep = 'X_pca', prior_path = embedding_dict_path, prior_weight = prior_weight, **kwargs)
-        alignment.write(alignment_path)
-    
-    elif method == 'scExtract':
-        adata_all.obs['dataset_cell_type'] = (adata_all.obs['Dataset'].astype(str) + '_' + adata_all.obs['cell_type'].astype(str)).astype('category')
-    
-        logging.info("Running PAGA for the merged dataset.")
-        sc.pp.neighbors(adata_all, use_rep='X_pca')
-        sc.tl.paga(adata_all, groups = 'dataset_cell_type')
+    if method == 'scanorama_prior':
+        print("Remind: Scanorama_prior requires the harmonized cell type")
         
-        # # assign cell type colors
-        # sc.pl.umap(adata_all, color = ['dataset', 'cell_type'], ncols = 1)
+        assert len(file_list) == 1, "Scanorama_prior only supports merged dataset. \
+            First merge the datasets using --method cellhint_prior."
         
-        # # mapping cell_type color to dataset_cell_type
-        # adata_all.uns['dataset_cell_type_colors'] = []
-        # for i, x in enumerate(adata_all.obs['dataset_cell_type'].cat.categories):
-        #     adata_all.uns['dataset_cell_type_colors'].append(adata_all.uns['cell_type_colors'][adata_all.obs['cell_type'].cat.categories.get_loc(x.split('_')[1])])
+        harmonized_celltype_list = adata_all.obs[f"cell_type"].unique().tolist()
+        
+        with open(embedding_dict_path, 'rb') as f:
+            embedding_dict = pickle.load(f)
+            
+        emb_list = [embedding_dict[x] for x in harmonized_celltype_list]
+        harmonized_celltype_embedding_similarities = np.dot(np.array(emb_list), np.array(emb_list).T)
+        harmonized_celltype_embedding_similarities_df = pd.DataFrame(harmonized_celltype_embedding_similarities, index = harmonized_celltype_list, columns = harmonized_celltype_list)
 
-        # create raw connectivities matrix
-        df_raw = pd.DataFrame(adata_all.uns['paga']['connectivities'].toarray()).copy()
-        df_raw.columns = adata_all.obs['dataset_cell_type'].cat.categories
-        df_raw.index = adata_all.obs['dataset_cell_type'].cat.categories
+        # split data into batches
+        batches = adata_all.obs['Dataset'].cat.categories.tolist()
+        adatas = []
+        for batch in batches:
+            adatas.append(adata_all[adata_all.obs['Dataset'] == batch,].copy())
         
-        logging.info("Creating prior similarity matrix from automatic annotation.")
-        prior_similarity_matrix_df = create_prior_similarity_matrix(df_raw, config_path, prior_method, embedding_dict_path)
-        adata_all.uns['prior_similarity_matrix_df'] = prior_similarity_matrix_df.copy()
-        adata_all.uns['raw_similarity_matrix_df'] = df_raw.copy()
+        del adata_all
+        gc.collect()
         
-        logging.info("Normalizing connectivities matrix.")
-        df_norm = normalize_connectivities(df_raw, prior_similarity_matrix_df, prior_weight)
+        scanorama_prior.scanorama.integrate_scanpy(adatas,
+                                         type_similarity_matrix=harmonized_celltype_embedding_similarities_df,
+                                         **kwargs
+                                         )
         
-        # update connectivities in adata_all
-        Tcsr = minimum_spanning_tree(csr_matrix(np.exp(-df_norm.values)))
-        adata_all.uns['paga']['connectivities'] = Tcsr
+        adata_all = ad.concat(adatas, join='outer')
+        adata_all.obsm['X_scanorama_prior'] = adata_all.obsm['X_scanorama'].copy()
         
-    # save the integrated dataset
-    adata_all.write(output_path)
+        del adatas
+        del adata_all.obsm['X_scanorama']
+        gc.collect()
+        
+        sc.pp.neighbors(adata_all, n_neighbors=30, use_rep='X_scanorama_prior')
+        sc.tl.umap(adata_all)
+        
+        adata_all.write(output_path)
+    
+    else:
+        adata_all = merge_datasets(file_list, downsample, downsample_cells_per_label)
+        adata_all.obs['cell_type_raw'] = adata_all.obs['cell_type'].copy()
+        adata_all.write(output_path) # save the merged dataset
+        
+        logging.info(f"Merged dataset shape: {adata_all.shape}")
+        adata_all = preprocess_merged_dataset(adata_all)
+        # sc.pl.umap(adata_all, color = 'dataset')
+        
+        if method == 'scExtract':
+            import scanorama_prior
+            import cellhint_prior
+            
+            if alignment_path is None:
+                alignment_path = output_path.replace('.h5ad', '.pkl')
+            
+            harmonized_celltype_list = adata_all.obs[f"cell_type"].unique().tolist()
+            harmonized_celltype_embedding_list = get_cell_type_embedding_by_llm(harmonized_celltype_list, config_path = config_path)
+            embedding_dict = dict(zip(harmonized_celltype_list, harmonized_celltype_embedding_list))
+            
+            alignment = cellhint_prior.harmonize(adata_all, dataset = 'Dataset', cell_type = 'cell_type', use_rep = 'X_pca', embedding_dict=embedding_dict, **kwargs)
+            print("Harmonized cell type stored in 'harmonized_cellhint_prior' column.")
+            alignment.write(alignment_path)
+            adata_all.obs[f"harmonized_cellhint_prior"] = alignment.reannotation.loc[adata_all.obs_names, ['reannotation']].copy()
+            adata_all.obs[f"cell_type"] = adata_all.obs[f"harmonized_cellhint_prior"].apply(remove_none_type)
+            
+            harmonized_celltype_list = adata_all.obs[f"cell_type"].unique().tolist()
+            
+            harmonized_celltype_embedding_list = get_cell_type_embedding_by_llm(harmonized_celltype_list, config_path = config_path)
+            harmonized_celltype_embedding_similarities = np.dot(np.array(harmonized_celltype_embedding_list), np.array(harmonized_celltype_embedding_list).T)
+            harmonized_celltype_embedding_similarities_df = pd.DataFrame(harmonized_celltype_embedding_similarities, index = harmonized_celltype_list, columns = harmonized_celltype_list)
+
+            # split data into batches
+            batches = adata_all.obs['Dataset'].cat.categories.tolist()
+            adatas = []
+            for batch in batches:
+                adatas.append(adata_all[adata_all.obs['Dataset'] == batch,].copy())
+            
+            del adata_all
+            gc.collect()
+            
+            scanorama_prior.scanorama.integrate_scanpy(adatas,
+                                            type_similarity_matrix=harmonized_celltype_embedding_similarities_df,
+                                            **kwargs
+                                            )
+            
+            adata_all = ad.concat(adatas, join='outer')
+            adata_all.obsm['X_scanorama_prior'] = adata_all.obsm['X_scanorama'].copy()
+            
+            del adatas
+            del adata_all.obsm['X_scanorama']
+            gc.collect()
+            
+            sc.pp.neighbors(adata_all, n_neighbors=30, use_rep='X_scanorama_prior')
+            sc.tl.umap(adata_all)
+        
+        elif method == 'cellhint':
+            if alignment_path is None:
+                alignment_path = output_path.replace('.h5ad', '.pkl')
+            alignment = cellhint.harmonize(adata_all, dataset = 'Dataset', cell_type = 'cell_type', use_rep = 'X_pca', **kwargs)
+            print("Harmonized cell type stored in 'harmonized_cellhint' column.")
+            adata_all.obs[f"harmonized_cellhint"] = alignment.reannotation.loc[adata_all.obs_names, ['reannotation']].copy()
+            
+            adata_all.obs[f"cell_type"] = adata_all.obs[f"harmonized_cellhint_prior"].apply(remove_none_type)
+            cellhint.integrate(adata_all, batch = 'Dataset', cell_type = f"cell_type")
+            
+            alignment.write(alignment_path)
+        
+        elif method == 'cellhint_prior':        
+            if alignment_path is None:
+                alignment_path = output_path.replace('.h5ad', '.pkl')
+            with open(embedding_dict_path, 'rb') as f:
+                embedding_dict = pickle.load(f)
+            alignment = cellhint_prior.harmonize(adata_all, dataset = 'Dataset', cell_type = 'cell_type', use_rep = 'X_pca', embedding_dict=embedding_dict, **kwargs)
+            print("Harmonized cell type stored in 'harmonized_cellhint_prior' column.")
+            adata_all.obs[f"harmonized_cellhint_prior"] = alignment.reannotation.loc[adata_all.obs_names, ['reannotation']].copy()
+            adata_all.obs[f"cell_type"] = adata_all.obs[f"harmonized_cellhint_prior"].apply(remove_none_type)
+            
+            alignment.write(alignment_path)
+            
+        else:
+            raise ValueError("Unknown method.")        
+            
+        # save the integrated dataset
+        adata_all.write(output_path)
+
+def remove_none_type(x):
+    x = x.replace('NONE = ', '')
+    x = x.replace(' = NONE', '')
+    x = x.replace('UNRESOLVED = ', '')
+    x = x.replace(' = UNRESOLVED', '')
+    return x
+
+def create_prior_similarity_matrix(df_raw: pd.DataFrame,
+                                   prior_method: str,
+                                   config_path : str = 'config.ini',
+                                   embedding_dict_path: Optional[str] = None) -> pd.DataFrame:
+    
+    similarity_matrix = np.zeros((len(df_raw), len(df_raw)))
+    if prior_method == 'ontology':
+        ontology_mapping_dict = {}
+
+        for i in range(len(df_raw)):
+            manual_cell_type = df_raw.columns[i].split('_')[1]
+            manual_cell_type = manual_cell_type.strip('s')
+            if manual_cell_type in ontology_mapping_dict.keys():
+                continue
+            obd_id, obd_label = request_ols(manual_cell_type)
+            ontology_mapping_dict[manual_cell_type] = obd_id
+        
+        similarity_dict = {}
+        for i in tqdm(range(len(df_raw))):
+            for j in range(len(df_raw)):
+                
+                ct1 = df_raw.columns[i].split('_')[1].strip('s')
+                ct2 = df_raw.index[j].split('_')[1].strip('s')
+                
+                if (ct1, ct2) in similarity_dict.keys():
+                    similarity_matrix[i, j] = similarity_dict[(ct1, ct2)]
+                elif (ct2, ct1) in similarity_dict.keys():
+                    similarity_matrix[i, j] = similarity_dict[(ct2, ct1)]
+                else:
+                    obd_id1 = ontology_mapping_dict[ct1]
+                    obd_id2 = ontology_mapping_dict[ct2]
+                    if obd_id1 == 'None' or obd_id2 == 'None':
+                        similarity_matrix[i, j] = 0
+                    else:
+                        similarity_matrix[i, j] = ontology_pairwise_similarity(ontology_mapping_dict[ct1], ontology_mapping_dict[ct2])
+                    similarity_dict[(ct1, ct2)] = similarity_matrix[i, j]
+        similarity_matrix_df = pd.DataFrame(similarity_matrix, index = df_raw.index, columns = df_raw.columns)
+        return similarity_matrix_df
+    
+    elif prior_method == 'llm':
+        ct = df_raw.index.str.split('_').str[1].tolist()
+        emb = get_cell_type_embedding_by_llm(ct, config_path = config_path)
+        emb = np.array(emb)
+        emb_norm = np.linalg.norm(emb, axis = 1)
+        similarity_matrix = np.dot(emb, emb.T) / np.outer(emb_norm, emb_norm)
+        similarity_matrix_1 = (similarity_matrix - np.mean(similarity_matrix, axis=1)[:, np.newaxis]) / (1 - np.mean(similarity_matrix, axis=1)[:, np.newaxis])
+        similarity_matrix_1[similarity_matrix_1 < 0] = 0
+        similarity_matrix_2 = (similarity_matrix - np.mean(similarity_matrix, axis=1)[np.newaxis, :]) / (1 - np.mean(similarity_matrix, axis=1)[np.newaxis, :])
+        similarity_matrix_2[similarity_matrix_2 < 0] = 0
+        similarity_matrix = (similarity_matrix_1 + similarity_matrix_2) / 2
+        similarity_matrix_df = pd.DataFrame(similarity_matrix, index = df_raw.index, columns = df_raw.index)
+        return similarity_matrix_df
+    
+    elif prior_method == 'local':
+        if embedding_dict_path is None:
+            raise ValueError("Please provide the path to the cell type embedding dictionary.")
+        with open(embedding_dict_path, 'rb') as f:
+            embedding_dict = pickle.load(f)
+            emb_list = [embedding_dict[x] for x in df_raw.index.str.split('_').str[1]]
+            emb = np.array(emb_list)
+            similarity_matrix = np.dot(emb, emb.T)
+            similarity_matrix_1 = (similarity_matrix - np.mean(similarity_matrix, axis=1)[:, np.newaxis]) / (1 - np.mean(similarity_matrix, axis=1)[:, np.newaxis])
+            similarity_matrix_1[similarity_matrix_1 < 0] = 0
+            similarity_matrix_2 = (similarity_matrix - np.mean(similarity_matrix, axis=0)[np.newaxis, :]) / (1 - np.mean(similarity_matrix, axis=0)[np.newaxis, :])
+            similarity_matrix_2[similarity_matrix_2 < 0] = 0
+            similarity_matrix = (similarity_matrix_1 + similarity_matrix_2) / 2
+            similarity_matrix_df = pd.DataFrame(similarity_matrix, index = df_raw.index, columns = df_raw.index)
+            return similarity_matrix_df
+        
+    else:
+        raise ValueError("Unknown prior method.")

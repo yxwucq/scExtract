@@ -48,15 +48,15 @@ scExtract auto_extract \
     -o OUTPUT_NAME
 ```
 
-The extraction follows these steps, the processing decisions/parameters are all article-based.
-1. Filter: Including Min_genes, Min_cells, Mitochondria_counts_percentage, etc.
-2. Preprocess: Including Normalization, Log1p_transform, Highly_variable_genes_selection, etc.
-3. Unsupervised clustering: Leiden clustering or Louvain clustering to similar groups as defined in the text
-4. Marker gene identification: Find marker genes based on differential expression
-5. Annotation: Cell type annotation
-6. Reannotating clusters(Optional): Query the low-confidence annotations associated gene expression and reannotate them
+### Extract cell type embedding
 
-For detailed configuration, refer to config file.
+Using `extract_celltype_embedding` subcommand.
+
+```
+scExtract extract_celltype_embedding \
+    --file_list *.h5ad \
+    --output_embedding_pkl embedding_dict.pkl
+```
 
 ### Integration
 
@@ -64,19 +64,44 @@ Using `integrate` subcommand.
 
 ```
 scExtract integrate \
-    -f FILE_LIST \
-    -m cellhint \
-    --prior_method llm
+    -f *.h5ad \
+    -m scExtract \
+    --embedding_dict_path embedding_dict.pkl
+    --prior_weight 0.1
+    --output_path integrate_output.h5ad
 ```
 
-For large dataset computed on HPC without internet access, you can first generate text embedding by individual dataset using `scExtract extract_celltype_embedding`. Then integrate using local provided dict object:
+For large dataset computed on HPC without internet access, you can do two-step integration:
+
+First (without internet access):
 
 ```
 scExtract integrate \
-    -f FILE_LIST \
-    -m cellhint \
-    --prior_method local \
-    --embedding_dict_path EMBEDDING_DICT_PATH
+    -f *.h5ad \
+    -m cellhint_prior \
+    --embedding_dict_path embedding_dict.pkl
+    --output_path integrate_output_tmp.h5ad
+```
+
+Then (with internet access):
+
+```
+scExtract extract_celltype_embedding \
+    --file_list integrate_output_tmp.h5ad \
+    --cell_type_column cell_type \
+    --output_embedding_pkl harmonized_embedding_dict.pkl
+```
+
+Finally (without internet access):
+
+```
+scExtract integrate \
+    -f integrate_output_tmp.h5ad \
+    -m scanorama_prior \
+    --embedding_dict_path harmonized_embedding_dict.pkl
+    --output_path integrate_output.h5ad
+
+rm integrate_output_tmp.h5ad
 ```
 
 ### Benchmark

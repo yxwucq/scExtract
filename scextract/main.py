@@ -51,16 +51,16 @@ def main():
         extract_celltype_embedding(file_list=args.file_list,
                                    config_path=args.config_path,
                                    output_embedding_pkl=args.output_embedding_pkl,
+                                   cell_type_column=args.cell_type_column,
                                    output_individual_config_pkls=args.output_individual_config_pkls,
                                    )
     elif args.subcommand == 'integrate':
         from integration.integrate import integrate_processed_datasets
         integrate_processed_datasets(file_list=args.file_list,
-                                     config_path=args.config_path,
                                      method=args.method,
                                      output_path=args.output_path,
+                                     config_path=args.config_path,
                                      prior_weight=args.prior_weight,
-                                     prior_method=args.prior_method,
                                      alignment_path=args.alignment_path,
                                      embedding_dict_path=args.embedding_dict_path,
                                      downsample=args.downsample,
