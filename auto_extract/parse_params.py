@@ -79,9 +79,10 @@ class Params:
                 if 'percentage' in key:
                     if value.startswith('0.'):
                         value = str(int(float(value) * 100))
-                if not value.isdigit():
-                    raise ValueError(f'Invalid value for {key}: {value}')
-                self.params[key] = int(value)
+                if '.' in value:
+                    self.params[key] = float(value)
+                else:
+                    self.params[key] = int(value)
                 
             # bool parameters
             elif key in self.bool_type_params:

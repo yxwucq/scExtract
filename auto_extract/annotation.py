@@ -22,7 +22,7 @@ def get_marker_genes(adata: ad.AnnData,
     
     marker_genes = {}
     for cluster in adata.obs[cluster_key].cat.categories:
-        marker_genes[cluster] = list(adata.uns['rank_genes_groups']['names'][cluster][:10].copy())
+        marker_genes[int(cluster)] = list(adata.uns['rank_genes_groups']['names'][cluster][:10].copy())
 
     return adata, marker_genes
     

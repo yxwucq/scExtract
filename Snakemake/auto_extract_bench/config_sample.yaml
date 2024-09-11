@@ -1,6 +1,7 @@
 # Author: Yuxuan Wu
 
 project_dir: /home/wu/projects/scExtract
+init_config_ini: config.ini
 output_suffix: claude3
 
 debug: False

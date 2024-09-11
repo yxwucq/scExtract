@@ -252,7 +252,7 @@ def get_cell_type_embedding_by_llm(cell_types: List[str],
     
     if config['API']['API_STYLES'] == 'same':
         if 'openai' in config['API']['TYPE']:
-            agent = Openai()
+            agent = OpenAI(api_key=config['API']['API_KEY'], base_url=config['API']['API_BASE_URL'])
         elif 'claude' in config['API']['TYPE']:
             raise ValueError('Claude3 does not support embedding API.')
         
@@ -269,6 +269,6 @@ def get_cell_type_embedding_by_llm(cell_types: List[str],
     
     elif config['API']['API_STYLES'] == 'openai':
         client = OpenAI(api_key=embedding_api_key, base_url=azure_endpoint)
-        emb = [agent.embeddings.create(input = [x], model=config['API']['EMBEDDING_MODEL']).data[0].embedding for x in cell_types]
+        emb = [client.embeddings.create(input = [x], model=config['API']['EMBEDDING_MODEL']).data[0].embedding for x in cell_types]
     
     return emb

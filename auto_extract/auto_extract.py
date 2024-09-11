@@ -160,8 +160,10 @@ subsetting the data to a smaller size.", color='light_red'))
                 adata = annotate(adata, reannotation_dict, params, final=True)
             else:
                 logging.info(colored('No genes found in the dataset to query.', color='yellow'))
+                adata = annotate(adata, annotation_dict, params, final=True)
         else:
             logging.info(colored('No genes to query.', color='yellow'))
+            adata = annotate(adata, annotation_dict, params, final=True)
     
     if config['API'].getboolean('CONVERT_EMBEDDING'):
         params.embedding_dict = {}

@@ -51,7 +51,7 @@ def main():
         extract_celltype_embedding(file_list=args.file_list,
                                    config_path=args.config_path,
                                    output_embedding_pkl=args.output_embedding_pkl,
-                                   output_individual_config_pkl=args.output_individual_config_pkl,
+                                   output_individual_config_pkls=args.output_individual_config_pkls,
                                    )
     elif args.subcommand == 'integrate':
         from integration.integrate import integrate_processed_datasets

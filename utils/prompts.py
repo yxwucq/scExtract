@@ -2,7 +2,7 @@ class Prompts:
     # Parameters
     LIST_TYPE_PARAMS = ['genes_to_query']
     INT_TYPE_PARAMS = ['filter_cells_min_genes', 'filter_cells_max_genes', 'filter_cells_min_counts', 'filter_cells_max_counts',
-                          'filter_genes_low', 'filter_mito_percentage_low', 'filter_ribo_percentage_low',
+                          'filter_genes_min_cells', 'filter_mito_percentage_max', 'filter_ribo_percentage_max',
                           'normalize_total_target_sum', 'highly_variable_genes_num', 'pca_comps',
                           'find_neighbors_neighbors_num', 'find_neighbors_using_pcs', 'leiden_or_louvain_group_numbers']
     BOOL_TYPE_PARAMS = ['batch_correction', 'log1p_transform', 'scale']
@@ -66,9 +66,9 @@ class Prompts:
         filter_cells_max_genes: {int|default|null, maximum number of genes expressed in a cell, usually around 5000}
         filter_cells_min_counts: {int|default|null, minimum allowed total counts per cell usually null}
         filter_cells_max_counts: {int|default|null, maximum allowed total counts per cell}
-        filter_genes_low: {int|default|null, minimum number of cells expressing a gene}
-        filter_mito_percentage_low: {int|default|null, maximum mitochondrial gene percentage (0,100)}
-        filter_ribo_percentage_low: {int|null, maximum ribosomal gene percentage (0,100)}
+        filter_genes_min_cells: {int|default|null, minimum number of cells expressing a gene}
+        filter_mito_percentage_max: {int|default|null, maximum mitochondrial gene percentage (0,100)}
+        filter_ribo_percentage_max: {int|null, maximum ribosomal gene percentage (0,100)}
         
         reasoning: {str, reasoning for the filtering parameters}
         

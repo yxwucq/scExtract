@@ -26,7 +26,7 @@ rule AutoExtract:
     input:
         input_adata=os.path.join(project_dir, "{sample}", "raw_data", "{sample}_raw.h5ad"),
         pdf_file=os.path.join(project_dir, "{sample}", "raw_data", "{sample}.pdf"),
-        config_file=os.path.join(project_dir, 'config.ini'),
+        config_file=os.path.join(project_dir, config["init_config_ini"]),
     params:
         output_dir=os.path.join(project_dir, "{sample}"),
         output_name="{sample}_" + config["output_suffix"] + "_extracted.h5ad",
@@ -86,7 +86,7 @@ rule Benchmark:
     input:
         with_true_adata=os.path.join(project_dir, "{sample}", "{sample}_" + config["output_suffix"] + "_with_true.h5ad"),
         output_config_pkl=os.path.join(project_dir, "{sample}", config["config_pkl"]),
-        config_file=os.path.join(project_dir, 'config.ini'),
+        config_file=os.path.join(project_dir, config["init_config_ini"]),
     params:
         true_key=config["true_key"],
         method=config["method"],

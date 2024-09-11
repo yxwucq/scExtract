@@ -10,6 +10,7 @@ import pandas as pd
 import numpy as np
 import logging
 import pickle
+import gc
 
 from benchmark.benchmark import request_ols, ontology_pairwise_similarity
 from auto_extract.agent import get_cell_type_embedding_by_llm
@@ -27,16 +28,18 @@ def merge_datasets(file_list: List[str],
         sample_name = file.split('/')[-1].replace('_processed.h5ad', '')
         adata.obs['Dataset'] = sample_name.replace('_', ' ')
         
-        raw_adata = ad.AnnData(X=csr_matrix(adata.raw.X), obs=adata.obs, var=adata.var)
-        if 'leiden' in raw_adata.obs.columns:
-            raw_adata.obs['cell_type'] = raw_adata.obs['leiden'].astype(str).str.replace('_', ' ').copy()
-        elif 'louvain' in raw_adata.obs.columns:
-            raw_adata.obs['cell_type'] = raw_adata.obs['louvain'].astype(str).str.replace('_', ' ').copy()
+        if 'leiden' in adata.obs.columns:
+            adata.obs['cell_type'] = adata.obs['leiden'].astype(str).str.replace('_', ' ').copy()
+        elif 'louvain' in adata.obs.columns:
+            adata.obs['cell_type'] = adata.obs['louvain'].astype(str).str.replace('_', ' ').copy()
         else:
             raise ValueError('No clustering result in the dataset')
-        
+
         if downsample:
-            raw_adata = density_weighted_stratified_sampling(raw_adata, target_cells_per_label)
+            adata = density_weighted_stratified_sampling(adata, target_cells_per_label)
+            print(f"Downsample to: {adata.shape}")
+            
+        raw_adata = ad.AnnData(X=csr_matrix(adata.raw.X.copy()), obs=adata.obs.copy(), var=adata.var.copy())
         
         if 'adata_all' not in locals():
             adata_all = raw_adata.copy()
@@ -45,7 +48,9 @@ def merge_datasets(file_list: List[str],
             adata_all.obs_names_make_unique()
             
         del adata
-    
+        del raw_adata
+        gc.collect()
+
     adata_all.obs = adata_all.obs.drop(columns = ['leiden', 'louvain'])
     del adata_all.var
     return adata_all

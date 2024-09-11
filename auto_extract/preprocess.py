@@ -49,25 +49,25 @@ def filter(adata: ad.AnnData,
 
     # Filter cells
     if params['filter_cells_min_genes'] is not None:
-        sc.pp.filter_cells(adata, min_genes=params['filter_cells_min_genes'])
+        sc.pp.filter_cells(adata, min_genes=min(params['filter_cells_min_genes'], 500))
     if params['filter_cells_max_genes'] is not None:
-        sc.pp.filter_cells(adata, max_genes=params['filter_cells_max_genes'])
+        sc.pp.filter_cells(adata, max_genes=max(params['filter_cells_max_genes'], 5000))
     if params['filter_cells_min_counts'] is not None:
-        sc.pp.filter_cells(adata, min_counts=params['filter_cells_min_counts'])
+        sc.pp.filter_cells(adata, min_counts=min(params['filter_cells_min_counts'], 2000))
     if params['filter_cells_max_counts'] is not None:
-        sc.pp.filter_cells(adata, max_counts=params['filter_cells_max_counts'])
-    if params['filter_genes_low'] is not None:
-        sc.pp.filter_genes(adata, min_cells=params['filter_genes_low'])
+        sc.pp.filter_cells(adata, max_counts=max(params['filter_cells_max_counts'], 40000))
+    if params['filter_genes_min_cells'] is not None:
+        sc.pp.filter_genes(adata, min_cells=min(params['filter_genes_min_cells'], 50))
     
     # TODO only human datasets
     adata.var['mt'] = adata.var_names.str.startswith('MT-')
     adata.var['ribo'] = adata.var_names.str.startswith(('RPL', 'RPS'))
     sc.pp.calculate_qc_metrics(adata, qc_vars=['mt', 'ribo'], percent_top=None, log1p=False, inplace=True)
     
-    if params['filter_mito_percentage_low'] is not None and adata.var['ribo'].sum() > 5: # at least 5 ribosomal genes
-        adata = adata[adata.obs['pct_counts_mt'] < params['filter_mito_percentage_low'], :].copy()
-    if params['filter_ribo_percentage_low'] is not None and adata.var['mt'].sum() > 5: # at least 5 mitochondrial genes
-        adata = adata[adata.obs['pct_counts_ribo'] < params['filter_ribo_percentage_low'], :].copy()
+    if params['filter_mito_percentage_max'] is not None and adata.var['mt'].sum() > 5: # at least 5 mitochondrial genes
+        adata = adata[adata.obs['pct_counts_mt'] < params['filter_mito_percentage_max'], :].copy()
+    if params['filter_ribo_percentage_max'] is not None and adata.var['ribo'].sum() > 5: # at least 5 ribosomal genes
+        adata = adata[adata.obs['pct_counts_ribo'] < params['filter_ribo_percentage_max'], :].copy()
         
     return adata
 

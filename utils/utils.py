@@ -14,6 +14,7 @@ def convert_ensembl_to_symbol(adata: ad.AnnData) -> ad.AnnData:
     shape_before = adata.shape
     
     logging.info('Finding gene symbols for Ensembl IDs...')
+    adata.var.index = adata.var.index.str.split('.').str[0]
     query_dict_list = mg.querymany(adata.var.index, scopes='ensembl.gene', fields='symbol')
     
     logging.info('Converting Ensembl IDs to gene symbols...')
