@@ -211,7 +211,7 @@ def integrate_processed_datasets(file_list: List[str],
         assert len(file_list) == 1, "Scanorama_prior only supports merged dataset. \
             First merge the datasets using --method cellhint_prior."
         
-        adata_all = merge_datasets(file_list, downsample, downsample_cells_per_label)
+        adata_all = sc.read_h5ad(file_list[0])
         logging.info(f"Merged dataset shape: {adata_all.shape}")
         
         harmonized_celltype_list = adata_all.obs[f"cell_type"].unique().tolist()
