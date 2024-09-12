@@ -143,7 +143,6 @@ def integrate_processed_datasets(file_list: List[str],
                                  method: str, # 'cellhint' or 'cellhint_prior'
                                  output_path: str,
                                  config_path : str = 'config.ini',
-                                 prior_weight: Optional[float] = 0.1,
                                  alignment_path: Optional[str] = None,
                                  embedding_dict_path: Optional[str] = None,
                                  downsample: Optional[bool] = False,
@@ -211,6 +210,9 @@ def integrate_processed_datasets(file_list: List[str],
         
         assert len(file_list) == 1, "Scanorama_prior only supports merged dataset. \
             First merge the datasets using --method cellhint_prior."
+        
+        adata_all = merge_datasets(file_list, downsample, downsample_cells_per_label)
+        logging.info(f"Merged dataset shape: {adata_all.shape}")
         
         harmonized_celltype_list = adata_all.obs[f"cell_type"].unique().tolist()
         

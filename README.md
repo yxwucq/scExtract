@@ -10,7 +10,6 @@ The input of the program are an anndata object and a PDF/txt file containing the
 ```
 git clone https://github.com/yxwucq/scExtract
 cd scExtract
-pip install -f requirements.txt
 pip install -e .
 ```
 
@@ -46,16 +45,6 @@ scExtract auto_extract \
     -p PDF_PATH \
     -d OUTPUT_DIR \
     -o OUTPUT_NAME
-```
-
-### Extract cell type embedding
-
-Using `extract_celltype_embedding` subcommand.
-
-```
-scExtract extract_celltype_embedding \
-    --file_list *.h5ad \
-    --output_embedding_pkl embedding_dict.pkl
 ```
 
 ### Integration
@@ -123,11 +112,11 @@ see `scExtract add_singler_annotation -h`
 
 ## Example
 
-![Similarity to author-defined cell type](src/similarity.png)
+![Similarity to author-defined cell type](assests/similarity.png)
 
 ### sample
 Muto, Y., Wilson, P.C., Ledru, N. et al. Single cell transcriptional and chromatin accessibility profiling redefine cellular heterogeneity in the adult human kidney. Nat Commun 12, 2190 (2021). https://doi.org/10.1038/s41467-021-22368-w
 
 `Cell_type` is author-defined cell type, `scExtract` is cell type extracted from scExtract, `no_context_anno` is cell type extracted without context information, `singler` is cell type from singleR. `Tissue`, `Certainty` are from scExtract.
 
-![sample8](src/sample8_benchmark.png)
+![sample8](assests/sample8_benchmark.png)

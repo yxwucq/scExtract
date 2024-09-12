@@ -60,7 +60,6 @@ def main():
                                      method=args.method,
                                      output_path=args.output_path,
                                      config_path=args.config_path,
-                                     prior_weight=args.prior_weight,
                                      alignment_path=args.alignment_path,
                                      embedding_dict_path=args.embedding_dict_path,
                                      downsample=args.downsample,

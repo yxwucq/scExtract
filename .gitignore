@@ -1,8 +1,5 @@
-*/__pycache__/
+**/__pycache__/
 *egg-info/
-_cache/
-methods_comparison/_cache/
+**/_cache/
 tests/test_data/
-auto_extract/config.py
-auto_extract/_config_stable.py
 Snakemake/*/config.yaml
