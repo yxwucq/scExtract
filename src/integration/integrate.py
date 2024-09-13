@@ -147,6 +147,7 @@ def integrate_processed_datasets(file_list: List[str],
                                  embedding_dict_path: Optional[str] = None,
                                  downsample: Optional[bool] = False,
                                  downsample_cells_per_label: Optional[int] = 1000,
+                                 search_factor: int = 5,
                                  **kwargs) -> None:
     
     """
@@ -234,6 +235,7 @@ def integrate_processed_datasets(file_list: List[str],
         
         scanorama_prior.scanorama.integrate_scanpy(adatas,
                                          type_similarity_matrix=harmonized_celltype_embedding_similarities_df,
+                                         search_factor = search_factor,
                                          **kwargs
                                          )
         
@@ -292,6 +294,7 @@ def integrate_processed_datasets(file_list: List[str],
             
             scanorama_prior.scanorama.integrate_scanpy(adatas,
                                             type_similarity_matrix=harmonized_celltype_embedding_similarities_df,
+                                            search_factor = search_factor,
                                             **kwargs
                                             )
             

@@ -63,7 +63,9 @@ def main():
                                      alignment_path=args.alignment_path,
                                      embedding_dict_path=args.embedding_dict_path,
                                      downsample=args.downsample,
-                                     downsample_cells_per_label=args.downsample_cells_per_label)
+                                     downsample_cells_per_label=args.downsample_cells_per_label,
+                                     search_factor=args.search_factor,
+                                     )
     
 if __name__ == '__main__':
     main()
