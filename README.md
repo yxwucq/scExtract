@@ -49,14 +49,13 @@ scExtract auto_extract \
 
 ### Integration
 
-Using `integrate` subcommand.
+For integration with standard scExtract pipeline, first install [cellhint_prior](https://github.com/yxwucq/cellhint_prior) and [scanorama_prior](https://github.com/yxwucq/scanorama_prior). Then using `integrate` subcommand.
 
 ```
 scExtract integrate \
     -f *.h5ad \
     -m scExtract \
     --embedding_dict_path embedding_dict.pkl
-    --prior_weight 0.1
     --output_path integrate_output.h5ad
 ```
 
