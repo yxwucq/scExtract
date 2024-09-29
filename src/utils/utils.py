@@ -15,7 +15,15 @@ def convert_ensembl_to_symbol(adata: ad.AnnData) -> ad.AnnData:
     
     logging.info('Finding gene symbols for Ensembl IDs...')
     adata.var.index = adata.var.index.str.split('.').str[0]
-    query_dict_list = mg.querymany(adata.var.index, scopes='ensembl.gene', fields='symbol')
+    
+    retry = 0
+    while retry < 3:
+        try:
+            query_dict_list = mg.querymany(adata.var.index, scopes='ensembl.gene', fields='symbol')
+            break
+        except:
+            retry += 1
+            logging.warning('Failed to connect to MyGeneInfo. Retrying...')
     
     logging.info('Converting Ensembl IDs to gene symbols...')
     convert_dict = {}

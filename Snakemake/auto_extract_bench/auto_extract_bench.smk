@@ -63,7 +63,8 @@ rule AddSingleR:
             --ref_data {params.ref_data} \
             --ref_features {params.ref_features} \
             --ref_labels {params.ref_labels} \
-            --key_added {params.singler_key}
+            --key_added {params.singler_key} \
+            --cache_dir {wildcards.sample}_singler_cache
     """
 
 rule IntersectTrue:

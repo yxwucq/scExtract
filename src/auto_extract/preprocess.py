@@ -66,6 +66,10 @@ def filter(adata: ad.AnnData,
     
     if params['filter_mito_percentage_max'] is not None and adata.var['mt'].sum() > 5: # at least 5 mitochondrial genes
         adata = adata[adata.obs['pct_counts_mt'] < params['filter_mito_percentage_max'], :].copy()
+    if params['filter_mito_percentage_min'] is not None and adata.var['mt'].sum() > 5:
+        adata = adata[adata.obs['pct_counts_mt'] > params['filter_mito_percentage_min'], :].copy()
+    if params['filter_ribo_percentage_min'] is not None and adata.var['ribo'].sum() > 5:
+        adata = adata[adata.obs['pct_counts_ribo'] > params['filter_ribo_percentage_min'], :].copy()
     if params['filter_ribo_percentage_max'] is not None and adata.var['ribo'].sum() > 5: # at least 5 ribosomal genes
         adata = adata[adata.obs['pct_counts_ribo'] < params['filter_ribo_percentage_max'], :].copy()
         
@@ -110,7 +114,7 @@ def preprocess(adata: ad.AnnData,
         sc.pp.scale(adata)
     
     # PCA
-    sc.pp.pca(adata, n_comps=max(params['pca_comps'], 60))
+    sc.pp.pca(adata, n_comps=max(params['pca_comps'], 100))
     
     # Batch correction scanorama
     if params['batch_correction']:

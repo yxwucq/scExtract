@@ -28,8 +28,11 @@ class Params:
                                   simple_annotation: bool = False,
                                   ) -> Dict[int, List[str]|str]:
         annotation_response = annotation_response.replace('\n', '')
-        annotation_dict = re.search(r'annotation_dict: {.*?}', annotation_response)
-        annotation_dict = annotation_dict.group(0).replace('annotation_dict: ', '')
+        try:
+            annotation_dict = re.search(r'annotation_dict\s*[:=]\s*({.*?})', annotation_response, re.DOTALL)
+        except:
+            annotation_dict = re.search(r'({.*?})', annotation_response, re.DOTALL)
+        annotation_dict = annotation_dict.group(1)
         
         try:
             annotation_dict = eval(annotation_dict)
@@ -101,14 +104,14 @@ class Params:
                     elif value in ['leiden', 'Leiden', 'LEIDEN']:
                         self.params[key] = 'leiden'
                     else:
-                        raise ValueError(f'Invalid Clustering method: {value}')
+                        Warning(f"Invalid Clustering method: {value}, using default: {self.params[key]}")
                 elif key == 'visualize_method':
                     if value in ['umap', 'UMAP', 'Umap']:
                         self.params[key] = 'umap'
                     elif value in ['t-SNE', 'tsne', 'TSNE', 'T-SNE', 'tSNE']:
                         self.params[key] = 'tsne'
                     else:
-                        raise ValueError(f'Invalid Visualization method: {value}')
+                        Warning(f"Invalid Visualization method: {value}, using default: {self.params[key]}")
             
             # list parameters
             elif key in self.list_type_params:
