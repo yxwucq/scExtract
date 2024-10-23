@@ -111,7 +111,7 @@ see `scExtract add_singler_annotation -h`
 
 ## Example
 
-![Similarity to author-defined cell type](assests/similarity.png)
+![Similarity to author-defined cell type](assests/metrics.png)
 
 ### sample
 Muto, Y., Wilson, P.C., Ledru, N. et al. Single cell transcriptional and chromatin accessibility profiling redefine cellular heterogeneity in the adult human kidney. Nat Commun 12, 2190 (2021). https://doi.org/10.1038/s41467-021-22368-w

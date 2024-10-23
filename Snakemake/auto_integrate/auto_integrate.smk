@@ -97,10 +97,10 @@ rule Integrate_Input:
         user_dataset=config["AddEmbedding.user_dataset"],
     shell: """
         mkdir -p {output.merged_adata_input}
-        cp {input.merge_output_adata} {output.merged_adata_input}
+        mv {input.merge_output_adata} {output.merged_adata_input}
         if [ -n "{params.user_dataset}" ]; then
-            cp {params.user_dataset} {output.merged_adata_input}
+            mv {params.user_dataset} {output.merged_adata_input}
         fi
-        cp {input.merged_embedding_dict} {output.merged_adata_input}
+        mv {input.merged_embedding_dict} {output.merged_adata_input}
         touch {output.finished}
     """ 
