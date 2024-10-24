@@ -37,7 +37,7 @@ scExtract -h
 
 ### Annotate
 
-Using `auto_extract` subcommand. Make sure to add `Batch` key to raw_adata.obs for possible batch correction within dataset: 
+Using `auto_extract` subcommand. Make sure to add `Batch` key to raw_adata.obs for possible batch correction within dataset. Sample datasets can be found at https://zenodo.org/records/13827072.
 
 ```
 scExtract auto_extract \
