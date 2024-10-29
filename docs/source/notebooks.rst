@@ -5,15 +5,15 @@ Notebooks for Preprocessing GSE Data
 We provide a series of notebooks to help you preprocess your data. These notebooks are designed to be easy to use on public GSE datasets.
 The notebooks are designed to locate in :code:`raw_data` folder. You can choose to run the notebooks according to the types of data you have:
 
-Batched data with 10X format: `batch_10X Example Notebook <_notebooks/batch_10X.ipynb>`_
+Batched data with 10X format: `batch_10X Example Notebook <https://github.com/yxwucq/scExtract/blob/master/docs/source/_notebooks/batch_10X.ipynb>`_
 
-Batched data with csv.gz format: `batch_csv Example Notebook <_notebooks/batch_csv.ipynb>`_
+Batched data with csv.gz format: `batch_csv Example Notebook <https://github.com/yxwucq/scExtract/blob/master/docs/source/_notebooks/batch_csv.ipynb>`_
 
 if txt.gz format, change delimiter to :code:`\\t`
 
-Single data with 10X format: `single_10X Example Notebook <_notebooks/single_10X.ipynb>`_
+Single data with 10X format: `single_10X Example Notebook <https://github.com/yxwucq/scExtract/blob/master/docs/source/_notebooks/single_10X.ipynb>`_
 
-Single data with txt.gz format: `single_txt Example Notebook <_notebooks/single_txt.ipynb>`_
+Single data with txt.gz format: `single_txt Example Notebook <https://github.com/yxwucq/scExtract/blob/master/docs/source/_notebooks/single_txt.ipynb>`_
 
 if csv.gz format, change delimiter to :code:`,`
 
