@@ -53,7 +53,7 @@ Raw Data Preparation
 
 * :code:`scExtract` accepts raw data in .h5ad format. Raw counts / Normalized counts / Log-transformed counts are all supported and will be automatically detected.
 * :code:`Batch` column must be specified in :code:`adata.obs` for possible batch effect correction.
-* For most single-cell data forms deposited in public repositories, we provide various notebooks for preprocessing, see :ref:`notebooks`.
+* For most single-cell data forms deposited in public repositories, we provide various notebooks for preprocessing, see :doc:`notebooks`.
 
 Data Processing
 -----------------------

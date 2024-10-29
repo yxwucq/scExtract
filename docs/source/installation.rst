@@ -86,6 +86,15 @@ scExtract depends on the following Python packages:
 Optional Dependencies
 ---------------------
 
+If you want to use the following features, you will need to install additional packages:
+
+:code:`scanorama_prior` and :code:`cellhint_prior` can be installed with :code:`git` and :code:`pip` from the following repositories:
+
+.. code-block:: bash
+
+    git clone https://github.com/yxwucq/scanorama_prior
+    git clone https://github.com/yxwucq/cellhint_prior
+
 .. list-table::
    :header-rows: 1
    :widths: 30 20 50
@@ -96,4 +105,12 @@ Optional Dependencies
    * - anthropic
      - >=0.25.1
      - Anthropic API integration
-
+   * - cellhint_prior
+     - 
+     - Cell type harmonization
+   * - scanorama_prior
+     - 
+     - Batch effect correction
+   * - cellhint
+     - >=1.0.0
+     - Cell type harmonization

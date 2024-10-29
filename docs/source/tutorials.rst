@@ -29,12 +29,13 @@ title, abstract, cell count per dataset, dataset location, and other details. Me
 Raw data download and processing
 --------------------------------
 
-Next, we need to manually download each dataset. We can exclude datasets that are difficult to access or require preprocessing, and it's recommended to focus on GSE datasets only. 
+Next, we need to manually download each dataset. We can exclude datasets that are difficult to access or require mapping, and it's recommended to focus on GSE datasets only.
+
 Using :code:`sample0` as an example, after downloading, place it in the :code:`sample0/raw_data directory`. Then use :code:`sc.read_text()` directly to read the dataset.
 
 It's important to note that we need to add a :code:`Batch` column to :code:`adata.obs` for subsequent batch effect correction. It's also recommended to add a :code:`Disease` column 
 for cell type annotation across different diseases. To ensure accuracy, this step requires manual input, but we have prepared comprehensive notebooks to help you complete this step, 
-please refer to :ref:`notebooks`.
+please refer to :doc:`notebooks`.
 
 .. code-block:: python
 
@@ -50,6 +51,7 @@ One-step integration
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 Next, we can run the :code:`auto_integrate.smk` script in :code:`scExtract/Snakemake` to batch process automatic datasets. 
+Remember to install prior-aware integration optional dependencies as described in the :ref:`installation` section
 
 First, place the script and config file in the project root directory, then rename :code:`config_sample.yaml` to :code:`config.yaml`, 
 and modify project directory and other information in the config file:
@@ -82,6 +84,8 @@ Finally, run the following command:
 
 By default, individual datasets will be downsampled in a hierarchical and desenty-based manner, and then integrated. If you are confident in memory usage, 
 you can remove the :code:`--downsample` option in the :code:`Integrate` rule.
+
+If you don't want to bother with prior-aware integration, you can set the :code:`method` to :code:`cellhint` to use the original CellHint method.
 
 Step-wise integration
 ~~~~~~~~~~~~~~~~~~~~~~~~~
