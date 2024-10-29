@@ -1,0 +1,6 @@
+sphinx>=4.0.0
+sphinx-rtd-theme
+myst-parser
+sphinx-copybutton
+sphinx-autodoc-typehints
+sphinx-autoapi
