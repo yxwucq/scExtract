@@ -46,7 +46,7 @@ def get_metadata_in_pdf(pdf_list: List[str],
     sample_numbers = []
     article_titles = []
     authors = []
-    magazine_names = []
+    journal_names = []
     sample_descriptions = []
     total_cells = []
     raw_data_sources = []
@@ -73,7 +73,7 @@ def get_metadata_in_pdf(pdf_list: List[str],
         sample_numbers.append(i)
         article_titles.append(params['title'])
         authors.append(params['author'])
-        magazine_names.append(params['magazine_name'])
+        journal_names.append(params['journal_name'])
         sample_descriptions.append(params['sample_description'])
         total_cells.append(params['total_cells'])
         raw_data_sources.append(params['raw_data_source'])
@@ -86,7 +86,7 @@ def get_metadata_in_pdf(pdf_list: List[str],
     metadata = pd.DataFrame({'sample_number': sample_numbers,
                              'article_title': article_titles,
                              'author': authors,
-                             'magazine_name': magazine_names,
+                             'journal_name': journal_names,
                              'sample_description': sample_descriptions,
                              'total_cells': total_cells,
                              'raw_data_source': raw_data_sources,

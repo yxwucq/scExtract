@@ -26,7 +26,7 @@ class Prompts:
         OUTPUT_FORMAT(description of the parameters is after the colon, do not include the description in the output):
         title: {str, title of the article}
         author: {str, family name of the first author plus 'et al.'}
-        magazine_name: {str, name of the magazine}
+        journal_name: {str, name of the magazine}
         sample_description: {str, short description of the samples used in scRNA-seq and their characteristics}
         total_cells: {int, total number of single cells analyzed}
         raw_data_source: {str, accession number or link to the raw data, e.g., GEO, SRA, etc.}
@@ -36,7 +36,7 @@ class Prompts:
         <response>
         title: Single-cell RNA-seq analysis of human liver immune cells reveals a novel subset of liver-resident natural killer cells
         author: Wu et al.
-        magazine_name: Nature Communications
+        journal_name: Nature Communications
         sample_description: liver immune cells from 5 healthy donors and 3 patients with chronic hepatitis B
         total_cells: 10000
         raw_data_source: GSE123456

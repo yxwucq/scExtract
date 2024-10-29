@@ -15,5 +15,4 @@ log_file: auto_extract.log
 AddEmbedding.user_dataset: 
 
 # Step 3: Integration
-method: cellhint
-prior_weight: 0.1
+method: scExtract

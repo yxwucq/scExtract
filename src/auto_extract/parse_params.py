@@ -165,7 +165,7 @@ def format_params(default_params) -> dict:
                 
     formatted_params['title'] = 'N/A'
     formatted_params['author'] = 'N/A'
-    formatted_params['magazine_name'] = 'N/A'
+    formatted_params['journal_name'] = 'N/A'
     formatted_params['sample_description'] = 'N/A'
     formatted_params['total_cells'] = 'N/A'
     formatted_params['raw_data_source'] = 'N/A'

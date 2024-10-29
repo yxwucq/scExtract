@@ -3,3 +3,4 @@
 **/_cache/
 tests/test_data/
 Snakemake/*/config.yaml
+docs/build/

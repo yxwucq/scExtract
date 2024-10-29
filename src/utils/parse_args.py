@@ -7,7 +7,7 @@ except ImportError:
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description='Automatically extract, process, and annotate single-cell data from literature.',
+        description='Automatically extract, process, and integrate single-cell data from literature.',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter    
     )
     parser.add_argument('--version', action='version', version=f'%(prog)s {__version__}')
