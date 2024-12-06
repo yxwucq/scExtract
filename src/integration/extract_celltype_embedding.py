@@ -34,7 +34,9 @@ def extract_celltype_embedding(file_list: str,
         if cell_type_column is not None:
             cell_types = adata.obs[cell_type_column].unique().tolist()
         else:
-            if 'leiden' in adata.obs.columns:
+            if 'cell_type' in adata.obs.columns:
+                cell_types = adata.obs['cell_type'].astype(str).str.replace('_', ' ').unique().tolist()
+            elif 'leiden' in adata.obs.columns:
                 cell_types = adata.obs['leiden'].astype(str).str.replace('_', ' ').unique().tolist()
             elif 'louvain' in adata.obs.columns:
                 cell_types = adata.obs['louvain'].astype(str).str.replace('_', ' ').unique().tolist()

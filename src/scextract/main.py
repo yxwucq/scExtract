@@ -46,6 +46,20 @@ def main():
                                ref_labels=args.ref_labels,
                                key_added=args.key_added,
                                cache_dir=args.cache_dir)
+    elif args.subcommand == 'add_celltypist_annotation':
+        from methods_comparison.celltypist_anno import add_celltypist_annotation
+        add_celltypist_annotation(pdf_path=args.pdf_path,
+                                  adata_path=args.adata_path,
+                                  config_path=args.config_path,
+                                  key_added=args.key_added,
+                                  output_path=args.output_path)
+    elif args.subcommand == 'add_sctype_annotation':
+        from methods_comparison.sctype_anno import add_sctype_annotation
+        add_sctype_annotation(pdf_path=args.pdf_path,
+                             adata_path=args.adata_path,
+                             output_path=args.output_path,
+                             key_added=args.key_added,
+                             config_path=args.config_path)
     elif args.subcommand == 'extract_celltype_embedding':
         from integration.extract_celltype_embedding import extract_celltype_embedding
         extract_celltype_embedding(file_list=args.file_list,

@@ -2,13 +2,14 @@
 
 import os
 
-configfile: "config.yaml"
+configfile: "config_extract.yaml"
 print(f"configfile: config.yaml")
 
 project_dir = config["project_dir"]
 # name_list = [x for x in os.listdir(project_dir) if os.path.isdir(os.path.join(project_dir, x))]
 name_list = glob_wildcards(project_dir + "/{sample}" + "/raw_data/{sample}_raw.h5ad").sample
 print(f"project_dir: {project_dir}")
+name_list = [x for x in name_list if 'sample16' in x]
 
 if config['applied_files'] != 'all':
     name_list = [x for x in name_list if config['applied_files'] in x]
@@ -46,30 +47,60 @@ rule AutoExtract:
             --benchmark_no_context_key no_context_annotation
     """
 
-rule AddSingleR:
-    input:
-        output_adata=os.path.join(project_dir, "{sample}", "{sample}_" + config["output_suffix"] + "_extracted.h5ad"),
-    params:
-        ref_data=config["ref_data"],
-        ref_features=config["ref_features"],
-        ref_labels=config["ref_labels"],
-        singler_key=config["singler_key"],
-    output:
-        with_singler_adata=tempd(os.path.join(project_dir, "{sample}", "{sample}_" + config["output_suffix"] + "_with_singler.h5ad")),
-    shell: """
-        scExtract add_singler_annotation \
-            --adata_path {input.output_adata} \
-            --output_path {output.with_singler_adata} \
-            --ref_data {params.ref_data} \
-            --ref_features {params.ref_features} \
-            --ref_labels {params.ref_labels} \
-            --key_added {params.singler_key} \
-            --cache_dir {wildcards.sample}_singler_cache
-    """
+# rule AddSingleR:
+#     input:
+#         output_adata=os.path.join(project_dir, "{sample}", "{sample}_" + config["output_suffix"] + "_extracted.h5ad"),
+#     params:
+#         ref_data=config["ref_data"],
+#         ref_features=config["ref_features"],
+#         ref_labels=config["ref_labels"],
+#         singler_key=config["singler_key"],
+#     output:
+#         with_singler_adata=tempd(os.path.join(project_dir, "{sample}", "{sample}_" + config["output_suffix"] + "_with_singler.h5ad")),
+#     shell: """
+#         scExtract add_singler_annotation \
+#             --adata_path {input.output_adata} \
+#             --output_path {output.with_singler_adata} \
+#             --ref_data {params.ref_data} \
+#             --ref_features {params.ref_features} \
+#             --ref_labels {params.ref_labels} \
+#             --key_added {params.singler_key} \
+#             --cache_dir {wildcards.sample}_singler_cache
+#     """
+
+# rule AddCellTypist:
+#     input:
+#         with_singler_adata=os.path.join(project_dir, "{sample}", "{sample}_" + config["output_suffix"] + "_with_singler.h5ad"),
+#         pdf_file=os.path.join(project_dir, "{sample}", "raw_data", "{sample}.pdf"),
+#         config_file=os.path.join(project_dir, config["init_config_ini"]),
+#     output:
+#         with_celltypist_adata=tempd(os.path.join(project_dir, "{sample}", "{sample}_" + config["output_suffix"] + "_with_celltypist.h5ad")),
+#     shell: """
+#         scExtract add_celltypist_annotation \
+#             --pdf_path {input.pdf_file} \
+#             --output_path {output.with_celltypist_adata} \
+#             --adata_path {input.with_singler_adata} \
+#             --config_path {input.config_file} \
+#     """
+
+# rule AddscType:
+#     input:
+#         with_celltypist_adata=os.path.join(project_dir, "{sample}", "{sample}_" + config["output_suffix"] + "_with_celltypist.h5ad"),
+#         pdf_file=os.path.join(project_dir, "{sample}", "raw_data", "{sample}.pdf"),
+#         config_file=os.path.join(project_dir, config["init_config_ini"]),
+#     output:
+#         with_sctype_adata=tempd(os.path.join(project_dir, "{sample}", "{sample}_" + config["output_suffix"] + "_with_sctype.h5ad")),
+#     shell: """
+#         scExtract add_sctype_annotation \
+#             --pdf_path {input.pdf_file} \
+#             --output_path {output.with_sctype_adata} \
+#             --adata_path {input.with_celltypist_adata} \
+#             --config_path {input.config_file} \
+#     """
 
 rule IntersectTrue:
     input:
-        with_singler_adata=os.path.join(project_dir, "{sample}", "{sample}_" + config["output_suffix"] + "_with_singler.h5ad"),
+        with_sctype_adata=os.path.join(project_dir, "{sample}", "{sample}_" + config["output_suffix"] + "_extracted.h5ad"),
         true_adata=os.path.join(project_dir, "{sample}", "raw_data" ,"{sample}_true.h5ad"),
     params:
         true_key=config["true_key"],
@@ -77,7 +108,7 @@ rule IntersectTrue:
         with_true_adata=tempd(os.path.join(project_dir, "{sample}", "{sample}_" + config["output_suffix"] + "_with_true.h5ad")),
     run:
         import scanpy as sc
-        adata = sc.read_h5ad(input.with_singler_adata)
+        adata = sc.read_h5ad(input.with_sctype_adata)
         adata_true = sc.read_h5ad(input.true_adata)
         adata = adata[adata.obs.index.isin(adata_true.obs.index)].copy()
         adata.obs[config["true_key"]] = adata_true.obs[config["true_key"]]

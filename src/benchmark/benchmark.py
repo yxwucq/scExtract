@@ -123,6 +123,9 @@ def benchmark_annotation(adata_path : str,
             config = pickle.load(f)
         
         ari_list = []
+        predict_group_key_list_cp = predict_group_key_list.copy()
+        similarity_key_list_cp = similarity_key_list.copy()
+        
         for predict_group_key, similarity_key in zip(predict_group_key_list, similarity_key_list):
             if predict_group_key == 'scextract':
                 if 'leiden' in adata.obs.keys():
@@ -132,12 +135,19 @@ def benchmark_annotation(adata_path : str,
                 else:
                     raise ValueError("No clustering results found.")
             
-            ari_score = adjusted_rand_score(adata.obs[true_group_key], adata.obs[predict_group_key])
-            ari_list.append(ari_score)
-            
             logging.info(f"Processing Predict group key: {predict_group_key}, Add to Similarity key: {similarity_key}")
             predict_cell_type_list = adata.obs[predict_group_key].unique()
             true_cell_type_list = adata.obs[true_group_key].unique()
+            
+            predict_cell_type_list = [x for x in predict_cell_type_list if x != '']
+            if len(predict_cell_type_list) == 0:
+                logging.warning(f"No cell type found in {predict_group_key}")
+                predict_group_key_list_cp.remove(predict_group_key)
+                similarity_key_list_cp.remove(similarity_key)
+                continue
+            
+            ari_score = adjusted_rand_score(adata.obs[true_group_key], adata.obs[predict_group_key])
+            ari_list.append(ari_score)
             
             similarity_dict = {}
             similarity_dict[(None, None)] = None
@@ -159,7 +169,10 @@ def benchmark_annotation(adata_path : str,
                                                 (np.linalg.norm(config.embedding_dict[x]) * np.linalg.norm(config.embedding_dict[y]))
 
             adata.obs[similarity_key] = adata.obs.apply(lambda x: similarity_dict[(x[predict_group_key], x[true_group_key])], axis=1)
-            
+        
+        similarity_key_list = similarity_key_list_cp
+        predict_group_key_list = predict_group_key_list_cp
+        
         for similarity_key in similarity_key_list:
             logging.info(f"Similarity key: {similarity_key}, Mean: {np.mean(adata.obs[similarity_key])}")
         
@@ -216,6 +229,9 @@ def benchmark_annotation_ols(adata_path : str,
     similarity_key_list = similarity_key.split(',')
 
     ari_list = []
+    predict_group_key_list_cp = predict_group_key_list.copy()
+    similarity_key_list_cp = similarity_key_list.copy()
+        
     for predict_group_key, similarity_key in zip(predict_group_key_list, similarity_key_list):
         if predict_group_key == 'scextract':
             if 'leiden' in adata.obs.keys():
@@ -229,6 +245,15 @@ def benchmark_annotation_ols(adata_path : str,
         ari_list.append(ari_score)
         
         logging.info(f"Processing Predict group key: {predict_group_key}, Add to Similarity key: {similarity_key}")
+        predict_cell_type_list = adata.obs[predict_group_key].unique()
+        
+        predict_cell_type_list = [x for x in predict_cell_type_list if x != '']
+        if len(predict_cell_type_list) == 0:
+            logging.warning(f"No cell type found in {predict_group_key}")
+            predict_group_key_list_cp.remove(predict_group_key)
+            similarity_key_list_cp.remove(similarity_key)
+            continue
+        
         adata.obs[predict_group_key + '_cl_label'] = None
         adata.obs[predict_group_key + '_cl_obo_id'] = None
         adata.obs[true_group_key + '_cl_label'] = None
@@ -263,6 +288,9 @@ def benchmark_annotation_ols(adata_path : str,
                 
         adata.obs[similarity_key] = [similarity_dict[(x, y)] for x, y in zip(adata.obs[predict_group_key + '_cl_obo_id'], 
                                                                         adata.obs[true_group_key + '_cl_obo_id'])]
+    
+    similarity_key_list = similarity_key_list_cp
+    predict_group_key_list = predict_group_key_list_cp
     
     for similarity_key in similarity_key_list:
         logging.info(f"Similarity key: {similarity_key}, Mean: {np.mean(adata.obs[similarity_key])}")

@@ -183,6 +183,11 @@ def integrate_processed_datasets(file_list: List[str],
             import cellhint
         except ImportError:
             raise ImportError("Please install cellhint to use the cellhint method.")
+    elif method == 'scanorama':
+        try:
+            import scanorama
+        except ImportError:
+            raise ImportError("Please install scanorama to use the scanorama method.")
     elif method == 'cellhint_prior':
         try:
             import cellhint_prior
@@ -251,6 +256,26 @@ def integrate_processed_datasets(file_list: List[str],
         
         adata_all.write(output_path)
     
+    elif method == 'scanorama':
+        assert len(file_list) == 1, "Scanorama_prior only supports merged dataset. \
+            First merge the datasets using --method cellhint_prior."
+        
+        adata_all = sc.read_h5ad(file_list[0])
+        logging.info(f"Merged dataset shape: {adata_all.shape}")
+        scanorama.scanorama.integrate_scanpy(adatas,
+                                         **kwargs
+                                         )
+
+        adata_all = ad.concat(adatas, join='outer')
+        
+        del adatas
+        gc.collect()
+
+        sc.pp.neighbors(adata_all, n_neighbors=30, use_rep='X_scanorama_prior')
+        sc.tl.umap(adata_all)
+        
+        adata_all.write(output_path)
+
     else:
         adata_all = merge_datasets(file_list, downsample, downsample_cells_per_label)
         adata_all.obs['cell_type_raw'] = adata_all.obs['cell_type'].copy()

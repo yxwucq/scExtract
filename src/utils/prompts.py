@@ -196,6 +196,20 @@ class Prompts:
         reasoning: The expression of CD3E and CD3D is high in cluster 0, which is a typical marker of T cells. The expression of CD19 is medium high in cluster 1, which is a typical marker of B cells, but not as high as in cluster 2
         </response>
         </example>""",
+        
+        'CHOOSE_MODEL_PROMPT': """You are celltypist, an automated cell type annotation tool to annotate your single-cell data.
+        Based on the following models, please choose the model that best fits your data:
+        
+        OUTPUT_FORMAT(description of the parameters is in the curly braces, do not include the description in the output):
+        model: {str, model name}
+        reasoning: {str, reasoning for the model choice}
+        
+        <example>
+        <response>
+        model: 'Immune_All_Low.pkl'
+        reasoning: This model is trained on immune cells and is suitable for the immune cell dataset in the article.
+        </response>
+        </example>""",
     }
     
     TOOL_PROMPTS = {

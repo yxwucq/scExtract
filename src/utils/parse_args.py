@@ -66,6 +66,24 @@ def parse_args():
     add_singler_annotation.add_argument('--cache_dir', '-c', type=str, default='_cache', help='Directory to save the cache files.')
     add_singler_annotation.add_argument('--key_added', '-k', type=str, default='singler_annotation', help='Key to save the annotation results in adata.obs.')
 
+    add_sctype_annotation = subparsers.add_parser('add_sctype_annotation', help='Annotate single-cell data using py implementation of scType.',
+                                                    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    
+    add_sctype_annotation.add_argument('--adata_path', '-i', type=str, required=True, help='Path to the processed data in AnnData format.')
+    add_sctype_annotation.add_argument('--pdf_path', '-p', type=str, required=True, help='Path to the PDF file containing the article. should in pdf or txt format.')
+    add_sctype_annotation.add_argument('--output_path', '-o', type=str, help='Path to save the output file. If not specified, the input file will be overwritten.')
+    add_sctype_annotation.add_argument('--config_path', '-f', type=str, default='config.ini', help='System config file path.')
+    add_sctype_annotation.add_argument('--key_added', '-k', type=str, default='sctype_annotation', help='Key to save the annotation results in adata.obs.')
+
+    add_celltypist_annotation = subparsers.add_parser('add_celltypist_annotation', help='Annotate single-cell data using celltypist.',
+                                                    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    
+    add_celltypist_annotation.add_argument('--pdf_path', '-p', type=str, required=True, help='Path to the PDF file containing the article. should in pdf or txt format.')
+    add_celltypist_annotation.add_argument('--adata_path', '-i', type=str, required=True, help='Path to the processed data in AnnData format.')
+    add_celltypist_annotation.add_argument('--config_path', '-f', type=str, default='config.ini', help='System config file path.')
+    add_celltypist_annotation.add_argument('--output_path', '-o', type=str, help='Path to save the output file. If not specified, the input file will be overwritten.')
+    add_celltypist_annotation.add_argument('--key_added', '-k', type=str, default='celltypist_annotation', help='Key to save the annotation results in adata.obs.')
+
     extract_celltype_embedding_parser = subparsers.add_parser('extract_celltype_embedding', help='Extract cell type embeddings from the processed datasets.',
                                                             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
  
