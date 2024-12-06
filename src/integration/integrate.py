@@ -262,6 +262,13 @@ def integrate_processed_datasets(file_list: List[str],
         
         adata_all = sc.read_h5ad(file_list[0])
         logging.info(f"Merged dataset shape: {adata_all.shape}")
+        
+        # split data into batches
+        batches = adata_all.obs['Dataset'].cat.categories.tolist()
+        adatas = []
+        for batch in batches:
+            adatas.append(adata_all[adata_all.obs['Dataset'] == batch,].copy())
+        
         scanorama.scanorama.integrate_scanpy(adatas,
                                          **kwargs
                                          )
