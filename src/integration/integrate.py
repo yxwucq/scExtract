@@ -218,6 +218,8 @@ def integrate_processed_datasets(file_list: List[str],
             First merge the datasets using --method cellhint_prior."
         
         adata_all = sc.read_h5ad(file_list[0])
+        # Use log1p normalized data for scanorama
+        adata_all = adata_all.raw.to_adata()
         logging.info(f"Merged dataset shape: {adata_all.shape}")
         
         harmonized_celltype_list = adata_all.obs[f"cell_type"].unique().tolist()
@@ -261,6 +263,8 @@ def integrate_processed_datasets(file_list: List[str],
             First merge the datasets using --method cellhint_prior."
         
         adata_all = sc.read_h5ad(file_list[0])
+        # Use log1p normalized data for scanorama
+        adata_all = adata_all.raw.to_adata()
         logging.info(f"Merged dataset shape: {adata_all.shape}")
         
         # split data into batches
@@ -278,7 +282,7 @@ def integrate_processed_datasets(file_list: List[str],
         del adatas
         gc.collect()
 
-        sc.pp.neighbors(adata_all, n_neighbors=30, use_rep='X_scanorama_prior')
+        sc.pp.neighbors(adata_all, n_neighbors=30, use_rep='X_scanorama')
         sc.tl.umap(adata_all)
         
         adata_all.write(output_path)
@@ -316,6 +320,8 @@ def integrate_processed_datasets(file_list: List[str],
             harmonized_celltype_embedding_similarities_df = pd.DataFrame(harmonized_celltype_embedding_similarities, index = harmonized_celltype_list, columns = harmonized_celltype_list)
 
             # split data into batches
+            # Use log1p normalized data for scanorama
+            adata_all = adata_all.raw.to_adata()
             batches = adata_all.obs['Dataset'].cat.categories.tolist()
             adatas = []
             for batch in batches:
