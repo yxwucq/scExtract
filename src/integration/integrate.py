@@ -220,6 +220,7 @@ def integrate_processed_datasets(file_list: List[str],
         adata_all = sc.read_h5ad(file_list[0])
         # Use log1p normalized data for scanorama
         adata_all = adata_all.raw.to_adata()
+        adata_all.raw = adata_all
         logging.info(f"Merged dataset shape: {adata_all.shape}")
         
         harmonized_celltype_list = adata_all.obs[f"cell_type"].unique().tolist()
@@ -265,6 +266,7 @@ def integrate_processed_datasets(file_list: List[str],
         adata_all = sc.read_h5ad(file_list[0])
         # Use log1p normalized data for scanorama
         adata_all = adata_all.raw.to_adata()
+        adata_all.raw = adata_all
         logging.info(f"Merged dataset shape: {adata_all.shape}")
         
         # split data into batches
@@ -322,6 +324,8 @@ def integrate_processed_datasets(file_list: List[str],
             # split data into batches
             # Use log1p normalized data for scanorama
             adata_all = adata_all.raw.to_adata()
+            adata_all.raw = adata_all
+            
             batches = adata_all.obs['Dataset'].cat.categories.tolist()
             adatas = []
             for batch in batches:
