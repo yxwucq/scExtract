@@ -39,9 +39,12 @@ def merge_datasets(file_list: List[str],
         adata = sc.read(file)
         print(f"Reading {file}, shape: {adata.shape}")
         sample_name = file.split('/')[-1].replace('_processed.h5ad', '')
-        adata.obs['Dataset'] = sample_name.replace('_', ' ')
+        if 'Dataset' not in adata.obs.columns:
+            adata.obs['Dataset'] = sample_name.replace('_', ' ')
         
-        if 'leiden' in adata.obs.columns:
+        if 'cell_type' in adata.obs.columns:
+            adata.obs['cell_type'] = adata.obs['cell_type'].astype(str).str.replace('_', ' ').copy()
+        elif 'leiden' in adata.obs.columns:
             adata.obs['cell_type'] = adata.obs['leiden'].astype(str).str.replace('_', ' ').copy()
         elif 'louvain' in adata.obs.columns:
             adata.obs['cell_type'] = adata.obs['louvain'].astype(str).str.replace('_', ' ').copy()
@@ -64,7 +67,8 @@ def merge_datasets(file_list: List[str],
         del raw_adata
         gc.collect()
 
-    adata_all.obs = adata_all.obs.drop(columns = ['leiden', 'louvain'])
+    if 'leiden' in adata_all.obs.columns or 'louvain' in adata_all.obs.columns:
+        adata_all.obs = adata_all.obs.drop(columns = ['leiden', 'louvain'])
     del adata_all.var
     return adata_all
 
@@ -76,9 +80,8 @@ def preprocess_merged_dataset(adata_all: ad.AnnData) -> ad.AnnData:
     sc.pp.highly_variable_genes(adata_all, batch_key = 'Dataset', subset = True)
     sc.pp.scale(adata_all)
     sc.tl.pca(adata_all)
-    # sc.external.pp.harmony_integrate(adata_all, key = 'dataset')
-    sc.pp.neighbors(adata_all, use_rep='X_pca')
-    sc.tl.umap(adata_all)
+    # sc.pp.neighbors(adata_all, use_rep='X_pca')
+    # sc.tl.umap(adata_all)
     
     return adata_all
 
@@ -162,7 +165,7 @@ def integrate_processed_datasets(file_list: List[str],
                                  downsample: Optional[bool] = False,
                                  downsample_cells_per_label: Optional[int] = 1000,
                                  search_factor: int = 5,
-                                 approx: bool = True,
+                                 approx: bool = False,
                                  **kwargs) -> None:
     
     """
@@ -323,7 +326,6 @@ def integrate_processed_datasets(file_list: List[str],
         
         logging.info(f"Merged dataset shape: {adata_all.shape}")
         adata_all = preprocess_merged_dataset(adata_all)
-        # sc.pl.umap(adata_all, color = 'dataset')
         
         if method == 'scExtract':
             import scanorama_prior
