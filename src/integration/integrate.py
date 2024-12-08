@@ -1,4 +1,6 @@
 from typing import List, Optional
+from functools import wraps
+import time
 from tqdm import tqdm
 import anndata as ad
 from scipy.sparse import csr_matrix
@@ -13,6 +15,18 @@ import gc
 
 from benchmark.benchmark import request_ols, ontology_pairwise_similarity
 from auto_extract.agent import get_cell_type_embedding_by_llm
+
+def time_print(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        print(f"Starting {func.__name__}...")
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        duration_min = (end_time - start_time) / 60
+        print(f"Finished {func.__name__} in {duration_min:.2f} minutes")
+        return result
+    return wrapper
 
 def merge_datasets(file_list: List[str],
                    downsample: Optional[bool] = False,
@@ -148,6 +162,7 @@ def integrate_processed_datasets(file_list: List[str],
                                  downsample: Optional[bool] = False,
                                  downsample_cells_per_label: Optional[int] = 1000,
                                  search_factor: int = 5,
+                                 approx: bool = True,
                                  **kwargs) -> None:
     
     """
@@ -173,6 +188,10 @@ def integrate_processed_datasets(file_list: List[str],
         Whether to downsample the cells.
     downsample_cells_per_label : int
         Number of cells to downsample per label.
+    search_factor : int
+        Search factor for scanorama_prior, only vaiable for approx = True in scanorama_prior.
+    approx : bool
+        Whether to use approximate search in scanorama_prior and scanorama.
     **kwargs : dict
         Additional parameters for the scanorama_prior method.
     """
@@ -181,30 +200,36 @@ def integrate_processed_datasets(file_list: List[str],
     if method == 'cellhint':
         try:
             import cellhint
+            cellhint.harmonize = time_print(cellhint.harmonize)
         except ImportError:
             raise ImportError("Please install cellhint to use the cellhint method.")
     elif method == 'scanorama':
         try:
             import scanorama
+            scanorama.scanorama.integrate_scanpy = time_print(scanorama.scanorama.integrate_scanpy)
         except ImportError:
             raise ImportError("Please install scanorama to use the scanorama method.")
     elif method == 'cellhint_prior':
         try:
             import cellhint_prior
+            cellhint_prior.harmonize = time_print(cellhint_prior.harmonize)
         except ImportError:
             raise ImportError("Please install cellhint_prior to use the cellhint_prior method.")
     elif method == 'scanorama_prior':
         try:
             import scanorama_prior
+            scanorama_prior.scanorama.integrate_scanpy = time_print(scanorama_prior.scanorama.integrate_scanpy)
         except ImportError:
             raise ImportError("Please install scanorama_prior to use the scanorama_prior method.")    
     elif method == 'scExtract':
         try:
             import cellhint_prior
+            cellhint_prior.harmonize = time_print(cellhint_prior.harmonize)
         except ImportError:
             raise ImportError("Please install cellhint_prior to use the cellhint method.")
         try:
             import scanorama_prior
+            scanorama_prior.scanorama.integrate_scanpy = time_print(scanorama_prior.scanorama.integrate_scanpy)
         except ImportError:
             raise ImportError("Please install scanorama_prior to use the scExtract method.")
     
@@ -244,6 +269,7 @@ def integrate_processed_datasets(file_list: List[str],
         scanorama_prior.scanorama.integrate_scanpy(adatas,
                                          type_similarity_matrix=harmonized_celltype_embedding_similarities_df,
                                          search_factor = search_factor,
+                                         approx = approx,
                                          **kwargs
                                          )
         
@@ -276,6 +302,7 @@ def integrate_processed_datasets(file_list: List[str],
             adatas.append(adata_all[adata_all.obs['Dataset'] == batch,].copy())
         
         scanorama.scanorama.integrate_scanpy(adatas,
+                                         approx = approx,
                                          **kwargs
                                          )
 

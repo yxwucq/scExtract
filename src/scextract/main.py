@@ -79,6 +79,7 @@ def main():
                                      downsample=args.downsample,
                                      downsample_cells_per_label=args.downsample_cells_per_label,
                                      search_factor=args.search_factor,
+                                     approx=args.approx,
                                      )
     
 if __name__ == '__main__':
