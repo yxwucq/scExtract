@@ -106,4 +106,6 @@ def parse_args():
     integrate_parser.add_argument('--downsample_cells_per_label', '-c', type=int, default=1000, help='Number of cells to downsample per label.')
     integrate_parser.add_argument('--search_factor', '-s', type=int, default=5, help='Increased fold of the search space for the prior optimization.')
     integrate_parser.add_argument('--approx', '-x', action='store_true', help='Whether to use approximate optimization.')
+    integrate_parser.add_argument('--use_gpu', '-g', action='store_true', help='Whether to use GPU for optimization.')
+    integrate_parser.add_argument('--batch_size', '-b', type=int, default=5000, help='Batch size for processing.')
     return parser.parse_args()

@@ -36,6 +36,9 @@ external = ["singler>=0.1.2",
     "singlecellexperiment>=0.4.4",
     "celltypist",
 ]
+gpu = ["cupy-cuda12x",
+    "pylibraft-cu11",
+]
 
 [project.scripts]
 scExtract = "scextract.main:main"

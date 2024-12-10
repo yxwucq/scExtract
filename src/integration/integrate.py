@@ -157,7 +157,7 @@ def density_weighted_stratified_sampling(adata: ad.AnnData,
     return sc.concat(subsampled_data)
 
 def integrate_processed_datasets(file_list: List[str],
-                                 method: str, # 'cellhint' or 'cellhint_prior'
+                                 method: str,
                                  output_path: str,
                                  config_path : str = 'config.ini',
                                  alignment_path: Optional[str] = None,
@@ -166,6 +166,8 @@ def integrate_processed_datasets(file_list: List[str],
                                  downsample_cells_per_label: Optional[int] = 1000,
                                  search_factor: int = 5,
                                  approx: bool = False,
+                                 use_gpu: bool = False,
+                                 batch_size: int = 5000,
                                  **kwargs) -> None:
     
     """
@@ -195,6 +197,10 @@ def integrate_processed_datasets(file_list: List[str],
         Search factor for scanorama_prior, only vaiable for approx = True in scanorama_prior.
     approx : bool
         Whether to use approximate search in scanorama_prior and scanorama.
+    use_gpu : bool
+        Whether to use GPU for scanorama_prior.
+    batch_size : int
+        Batch size for scanorama_prior.
     **kwargs : dict
         Additional parameters for the scanorama_prior method.
     """
@@ -273,6 +279,8 @@ def integrate_processed_datasets(file_list: List[str],
                                          type_similarity_matrix=harmonized_celltype_embedding_similarities_df,
                                          search_factor = search_factor,
                                          approx = approx,
+                                         use_gpu = use_gpu,
+                                         batch_size = batch_size,
                                          **kwargs
                                          )
         
@@ -366,6 +374,8 @@ def integrate_processed_datasets(file_list: List[str],
             scanorama_prior.scanorama.integrate_scanpy(adatas,
                                             type_similarity_matrix=harmonized_celltype_embedding_similarities_df,
                                             search_factor = search_factor,
+                                            use_gpu = use_gpu,
+                                            batch_size = batch_size,
                                             **kwargs
                                             )
             

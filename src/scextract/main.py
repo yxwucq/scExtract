@@ -80,6 +80,8 @@ def main():
                                      downsample_cells_per_label=args.downsample_cells_per_label,
                                      search_factor=args.search_factor,
                                      approx=args.approx,
+                                     use_gpu=args.use_gpu,
+                                     batch_size=args.batch_size,
                                      )
     
 if __name__ == '__main__':
