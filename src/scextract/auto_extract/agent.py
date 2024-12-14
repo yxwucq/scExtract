@@ -8,7 +8,7 @@ from typing import List
 import numpy as np
 import configparser
 
-from utils.prompts import Prompts
+from ..utils.prompts import Prompts
 
 class BaseClient(ABC):
     def __init__(self, pdf_path: str = None, config_path: str = 'config.ini'):

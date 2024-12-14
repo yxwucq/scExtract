@@ -16,7 +16,7 @@ from .annotation import get_marker_genes, annotate, query_datasets, simple_annot
 from .parse_params import Params 
 
 import configparser
-from utils.utils import convert_ensembl_to_symbol
+from ..utils.utils import convert_ensembl_to_symbol
 
 def auto_extract(adata_path: str,
                  pdf_path: str, 

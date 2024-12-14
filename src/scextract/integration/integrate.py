@@ -13,8 +13,8 @@ import logging
 import pickle
 import gc
 
-from benchmark.benchmark import request_ols, ontology_pairwise_similarity
-from auto_extract.agent import get_cell_type_embedding_by_llm
+from ..benchmark.benchmark import request_ols, ontology_pairwise_similarity
+from ..auto_extract.agent import get_cell_type_embedding_by_llm
 
 def time_print(func):
     @wraps(func)

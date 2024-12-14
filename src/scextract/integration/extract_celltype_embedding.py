@@ -14,7 +14,7 @@ import argparse
 import logging
 import sys
 
-from auto_extract.agent import get_cell_type_embedding_by_llm
+from ..auto_extract.agent import get_cell_type_embedding_by_llm
 
 def extract_celltype_embedding(file_list: str,
                                output_embedding_pkl: str,

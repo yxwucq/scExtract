@@ -12,7 +12,7 @@ import pickle
 import requests
 from requests.adapters import HTTPAdapter, Retry
 
-from auto_extract.agent import get_cell_type_embedding_by_llm
+from ..auto_extract.agent import get_cell_type_embedding_by_llm
 
 def request_ols(query_cell_type: str,
                 ontology: str = "cl",

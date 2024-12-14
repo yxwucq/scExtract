@@ -23,8 +23,8 @@ from urllib3.util.retry import Retry
 import configparser
 import re
 
-from auto_extract.agent import Claude3, Openai, get_cell_type_embedding_by_llm
-from auto_extract.parse_params import Params 
+from ..auto_extract.agent import Claude3, Openai, get_cell_type_embedding_by_llm
+from ..auto_extract.parse_params import Params 
 
 # From https://github.com/kris-nader/sc-type-py
 def gene_sets_prepare(path_to_db_file, cell_type):

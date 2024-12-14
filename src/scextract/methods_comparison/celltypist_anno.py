@@ -6,8 +6,8 @@ import re
 import pandas as pd
 from pathlib import Path
 import tempfile
-from auto_extract.agent import Claude3, Openai, get_cell_type_embedding_by_llm
-from auto_extract.parse_params import Params 
+from ..auto_extract.agent import Claude3, Openai, get_cell_type_embedding_by_llm
+from ..auto_extract.parse_params import Params 
 
 def format_celltypist_model_list(df: pd.DataFrame) -> str:
     if not isinstance(df, pd.DataFrame):

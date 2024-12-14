@@ -3,7 +3,7 @@ from typing import List, Dict
 import re
 import configparser
 
-from utils.prompts import Prompts
+from ..utils.prompts import Prompts
 
 class Params:
     def __init__(self, config_path: str = 'config.ini'):
