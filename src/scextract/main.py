@@ -83,6 +83,7 @@ def main():
                                      use_gpu=args.use_gpu,
                                      batch_size=args.batch_size,
                                      use_pct=args.use_pct,
+                                     dimred=args.dimred,
                                      )
     
 if __name__ == '__main__':

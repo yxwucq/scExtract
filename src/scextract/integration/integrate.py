@@ -72,14 +72,15 @@ def merge_datasets(file_list: List[str],
     del adata_all.var
     return adata_all
 
-def preprocess_merged_dataset(adata_all: ad.AnnData) -> ad.AnnData:
+def preprocess_merged_dataset(adata_all: ad.AnnData, 
+                              dimred=50) -> ad.AnnData:
     """
     Preprocess the merged dataset. Should be raw counts data with dataset and cell_type annotations.
     """
     adata_all.raw = adata_all
     sc.pp.highly_variable_genes(adata_all, batch_key = 'Dataset', subset = True)
     sc.pp.scale(adata_all)
-    sc.tl.pca(adata_all)
+    sc.pp.pca(adata_all, n_comps=dimred)
     # sc.pp.neighbors(adata_all, use_rep='X_pca')
     # sc.tl.umap(adata_all)
     
@@ -168,6 +169,7 @@ def integrate_processed_datasets(file_list: List[str],
                                  approx: bool = False,
                                  use_gpu: bool = False,
                                  batch_size: int = 5000,
+                                 dimred: int = 50,
                                  use_pct: bool = False,
                                  **kwargs) -> None:
     
@@ -202,6 +204,8 @@ def integrate_processed_datasets(file_list: List[str],
         Whether to use GPU for scanorama_prior.
     batch_size : int
         Batch size for scanorama_prior.
+    dimred : int
+        Number of dimensions for PCA.
     use_pct : bool
         Whether to use percent of cells for cellhint.
     **kwargs : dict
@@ -284,6 +288,7 @@ def integrate_processed_datasets(file_list: List[str],
                                          approx = approx,
                                          use_gpu = use_gpu,
                                          batch_size = batch_size,
+                                         dimred = dimred,
                                          **kwargs
                                          )
         
@@ -317,6 +322,8 @@ def integrate_processed_datasets(file_list: List[str],
         
         scanorama.scanorama.integrate_scanpy(adatas,
                                          approx = approx,
+                                         batch_size = batch_size,
+                                         dimred = dimred,
                                          **kwargs
                                          )
 
@@ -336,7 +343,7 @@ def integrate_processed_datasets(file_list: List[str],
         adata_all.write(output_path) # save the merged dataset
         
         logging.info(f"Merged dataset shape: {adata_all.shape}")
-        adata_all = preprocess_merged_dataset(adata_all)
+        adata_all = preprocess_merged_dataset(adata_all, dimred=dimred)
         
         if method == 'scExtract':
             import scanorama_prior
@@ -379,6 +386,7 @@ def integrate_processed_datasets(file_list: List[str],
                                             search_factor = search_factor,
                                             use_gpu = use_gpu,
                                             batch_size = batch_size,
+                                            dimred = dimred,
                                             **kwargs
                                             )
             

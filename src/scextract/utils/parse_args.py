@@ -109,4 +109,5 @@ def parse_args():
     integrate_parser.add_argument('--use_gpu', '-g', action='store_true', help='Whether to use GPU for optimization.')
     integrate_parser.add_argument('--batch_size', '-b', type=int, default=5000, help='Batch size for processing.')
     integrate_parser.add_argument('--use_pct', '-p', action='store_true', help='Whether to use pct for cellhint.')
+    integrate_parser.add_argument('--dimred', '-r', type=int, default=50, help='Dimensionality of the integrated embedding.')
     return parser.parse_args()
