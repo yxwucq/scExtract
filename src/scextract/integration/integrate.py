@@ -168,6 +168,7 @@ def integrate_processed_datasets(file_list: List[str],
                                  approx: bool = False,
                                  use_gpu: bool = False,
                                  batch_size: int = 5000,
+                                 use_pct: bool = False,
                                  **kwargs) -> None:
     
     """
@@ -201,6 +202,8 @@ def integrate_processed_datasets(file_list: List[str],
         Whether to use GPU for scanorama_prior.
     batch_size : int
         Batch size for scanorama_prior.
+    use_pct : bool
+        Whether to use percent of cells for cellhint.
     **kwargs : dict
         Additional parameters for the scanorama_prior method.
     """
@@ -392,11 +395,11 @@ def integrate_processed_datasets(file_list: List[str],
         elif method == 'cellhint':
             if alignment_path is None:
                 alignment_path = output_path.replace('.h5ad', '.pkl')
-            alignment = cellhint.harmonize(adata_all, dataset = 'Dataset', cell_type = 'cell_type', use_rep = 'X_pca', **kwargs)
+            alignment = cellhint.harmonize(adata_all, dataset = 'Dataset', cell_type = 'cell_type', use_rep = 'X_pca', use_pct=use_pct, **kwargs)
             print("Harmonized cell type stored in 'harmonized_cellhint' column.")
             adata_all.obs[f"harmonized_cellhint"] = alignment.reannotation.loc[adata_all.obs_names, ['reannotation']].copy()
             
-            adata_all.obs[f"cell_type"] = adata_all.obs[f"harmonized_cellhint_prior"].apply(remove_none_type)
+            adata_all.obs[f"cell_type"] = adata_all.obs[f"harmonized_cellhint"].apply(remove_none_type)
             cellhint.integrate(adata_all, batch = 'Dataset', cell_type = f"cell_type")
             
             alignment.write(alignment_path)
@@ -406,7 +409,7 @@ def integrate_processed_datasets(file_list: List[str],
                 alignment_path = output_path.replace('.h5ad', '.pkl')
             with open(embedding_dict_path, 'rb') as f:
                 embedding_dict = pickle.load(f)
-            alignment = cellhint_prior.harmonize(adata_all, dataset = 'Dataset', cell_type = 'cell_type', use_rep = 'X_pca', embedding_dict=embedding_dict, **kwargs)
+            alignment = cellhint_prior.harmonize(adata_all, dataset = 'Dataset', cell_type = 'cell_type', use_rep = 'X_pca', use_pct=use_pct, embedding_dict=embedding_dict, **kwargs)
             print("Harmonized cell type stored in 'harmonized_cellhint_prior' column.")
             adata_all.obs[f"harmonized_cellhint_prior"] = alignment.reannotation.loc[adata_all.obs_names, ['reannotation']].copy()
             adata_all.obs[f"cell_type"] = adata_all.obs[f"harmonized_cellhint_prior"].apply(remove_none_type)

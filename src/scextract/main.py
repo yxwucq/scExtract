@@ -82,6 +82,7 @@ def main():
                                      approx=args.approx,
                                      use_gpu=args.use_gpu,
                                      batch_size=args.batch_size,
+                                     use_pct=args.use_pct,
                                      )
     
 if __name__ == '__main__':
