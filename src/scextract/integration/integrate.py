@@ -338,12 +338,22 @@ def integrate_processed_datasets(file_list: List[str],
         adata_all.write(output_path)
 
     else:
-        adata_all = merge_datasets(file_list, downsample, downsample_cells_per_label)
-        adata_all.obs['cell_type_raw'] = adata_all.obs['cell_type'].copy()
-        adata_all.write(output_path) # save the merged dataset
+        if len(file_list) > 1:
+            adata_all = merge_datasets(file_list, downsample, downsample_cells_per_label)
+            adata_all.obs['cell_type_raw'] = adata_all.obs['cell_type'].copy()
+            adata_all.write(output_path) # save the merged dataset
+            adata_all = preprocess_merged_dataset(adata_all, dimred=dimred)
+
+        else:
+            adata_all = sc.read_h5ad(file_list[0]) # default to read the merged dataset
+            adata_all = adata_all.raw.to_adata()
+            adata_all.raw = adata_all
+            sc.pp.scale(adata_all)
+            sc.pp.pca(adata_all, n_comps=dimred)
+            adata_all.obs['cell_type_raw'] = adata_all.obs['cell_type'].copy()
+            adata_all.write(output_path) # save the merged dataset
         
         logging.info(f"Merged dataset shape: {adata_all.shape}")
-        adata_all = preprocess_merged_dataset(adata_all, dimred=dimred)
         
         if method == 'scExtract':
             import scanorama_prior
@@ -421,6 +431,7 @@ def integrate_processed_datasets(file_list: List[str],
             print("Harmonized cell type stored in 'harmonized_cellhint_prior' column.")
             adata_all.obs[f"harmonized_cellhint_prior"] = alignment.reannotation.loc[adata_all.obs_names, ['reannotation']].copy()
             adata_all.obs[f"cell_type"] = adata_all.obs[f"harmonized_cellhint_prior"].apply(remove_none_type)
+            cellhint_prior.integrate(adata_all, batch = 'Dataset', cell_type = f"cell_type")
             
             alignment.write(alignment_path)
             
