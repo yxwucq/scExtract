@@ -205,7 +205,7 @@ def integrate_processed_datasets(file_list: List[str],
     batch_size : int
         Batch size for scanorama_prior.
     dimred : int
-        Number of dimensions for PCA.
+        Number of dimensions for scanorama_prior.
     use_pct : bool
         Whether to use percent of cells for cellhint.
     **kwargs : dict
@@ -342,7 +342,7 @@ def integrate_processed_datasets(file_list: List[str],
             adata_all = merge_datasets(file_list, downsample, downsample_cells_per_label)
             adata_all.obs['cell_type_raw'] = adata_all.obs['cell_type'].copy()
             adata_all.write(output_path) # save the merged dataset
-            adata_all = preprocess_merged_dataset(adata_all, dimred=dimred)
+            adata_all = preprocess_merged_dataset(adata_all, dimred=50)
 
         else:
             adata_all = sc.read_h5ad(file_list[0]) # default to read the merged dataset
@@ -350,7 +350,7 @@ def integrate_processed_datasets(file_list: List[str],
             adata_all.raw = adata_all
             sc.pp.highly_variable_genes(adata_all, subset = True, n_top_genes=3000)
             sc.pp.scale(adata_all)
-            sc.pp.pca(adata_all, n_comps=dimred)
+            sc.pp.pca(adata_all, n_comps=50)
             adata_all.obs['cell_type_raw'] = adata_all.obs['cell_type'].copy()
             adata_all.write(output_path) # save the merged dataset
         
