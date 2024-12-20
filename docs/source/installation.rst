@@ -70,9 +70,6 @@ scExtract depends on the following Python packages:
    * - pypdf
      - >=4.2.0
      - PDF processing
-   * - singler
-     - >=0.1.2
-     - Cell type annotation
    * - singlecellexperiment
      - >=0.4.4
      - Single cell data structure
@@ -114,3 +111,12 @@ If you want to use the following features, you will need to install additional p
    * - cellhint
      - >=1.0.0
      - Cell type harmonization
+   * - singler
+     - >=0.1.2
+     - Cell type annotation
+   * - scanorama
+     -
+     - Batch effect correction
+   * - cupy
+     -
+     - GPU acceleration

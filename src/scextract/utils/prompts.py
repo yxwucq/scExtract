@@ -226,6 +226,40 @@ class Prompts:
         annotation_dict: {0: 'cell_type1', 1: 'cell_type2', ...}
         
         reasoning: {str, reasoning for the annotation}""",
+        
+        'MAJOR_VOTE_ANNOTATION_PROMPT': """I will give you the top 5 most abundant cell types annotation of each cluster. Based on the majority vote,
+        assign the cell type to each cluster. If you are unsure, mark it as 'Unknown'. You should try to assign a **cell ontology** label to each cluster (e.g. T helper cell, etc.),
+
+        OUTPUT_FORMAT (description of the parameters is in the curly braces, do not include the description in the output):
+        annotation_dict: {0: 'cell_type1', 1: 'cell_type2', ...}
+        reasoning: {str, reasoning for the annotation}
+
+        <example>
+        Cluster 0:
+        cell_type                         cell_count    percentage    dataset_support
+        Fibroblast (FB)                      46573        13.2              3
+        Secretory-papillary fibroblast        4977         7.0               1
+        Fibroblast                            3834         5.4               2
+        Secretory-reticular fibroblast        2847         4.0               1
+        Mesenchymal fibroblast                 936         1.3               1
+
+        Cluster 1:
+        cell_type                         cell_count    percentage    dataset_support
+        T cell                               46573        45.5              4
+        T helper cell                         4977         8.4              1
+        T cytotoxic cell                      3834         6.5               1
+        T regulatory cell                     2847         4.8               1
+        T cell 2                              936         1.6               1
+        ...
+        <response>
+        annotation_dict: {0: 'Fibroblast', 1: 'T cell', ...}
+
+        reasoning: {Cluster 0 is annotated as 'Fibroblast' because the majority of cells (65.2%) are labeled as Fibroblast (FB), and other top annotations are also fibroblast subtypes. This annotation is well-supported across 12 datasets. Cluster 1 is clearly a T cell cluster with 78.5% of cells annotated as T cells and remaining populations being T cell subtypes, with strong support across 15 datasets...}
+        </response>
+        </example>
+
+        This is the output of the top 5 marker genes for each cluster:
+        """,
     }
     
     def __init__(self):

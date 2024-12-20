@@ -78,7 +78,7 @@ def preprocess_merged_dataset(adata_all: ad.AnnData,
     Preprocess the merged dataset. Should be raw counts data with dataset and cell_type annotations.
     """
     adata_all.raw = adata_all
-    sc.pp.highly_variable_genes(adata_all, batch_key = 'Dataset', subset = True)
+    sc.pp.highly_variable_genes(adata_all, subset = True, n_top_genes=3000)
     sc.pp.scale(adata_all)
     sc.pp.pca(adata_all, n_comps=dimred)
     # sc.pp.neighbors(adata_all, use_rep='X_pca')
@@ -169,7 +169,7 @@ def integrate_processed_datasets(file_list: List[str],
                                  approx: bool = False,
                                  use_gpu: bool = False,
                                  batch_size: int = 5000,
-                                 dimred: int = 50,
+                                 dimred: int = 100,
                                  use_pct: bool = False,
                                  **kwargs) -> None:
     
@@ -348,6 +348,7 @@ def integrate_processed_datasets(file_list: List[str],
             adata_all = sc.read_h5ad(file_list[0]) # default to read the merged dataset
             adata_all = adata_all.raw.to_adata()
             adata_all.raw = adata_all
+            sc.pp.highly_variable_genes(adata_all, subset = True, n_top_genes=3000)
             sc.pp.scale(adata_all)
             sc.pp.pca(adata_all, n_comps=dimred)
             adata_all.obs['cell_type_raw'] = adata_all.obs['cell_type'].copy()
@@ -432,7 +433,7 @@ def integrate_processed_datasets(file_list: List[str],
             adata_all.obs[f"harmonized_cellhint_prior"] = alignment.reannotation.loc[adata_all.obs_names, ['reannotation']].copy()
             adata_all.obs[f"cell_type"] = adata_all.obs[f"harmonized_cellhint_prior"].apply(remove_none_type)
             cellhint_prior.integrate(adata_all, batch = 'Dataset', cell_type = f"cell_type")
-            
+
             alignment.write(alignment_path)
             
         else:
