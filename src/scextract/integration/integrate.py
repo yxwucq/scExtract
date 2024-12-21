@@ -78,7 +78,7 @@ def preprocess_merged_dataset(adata_all: ad.AnnData,
     Preprocess the merged dataset. Should be raw counts data with dataset and cell_type annotations.
     """
     adata_all.raw = adata_all
-    sc.pp.highly_variable_genes(adata_all, subset = True, n_top_genes=3000)
+    sc.pp.highly_variable_genes(adata_all, batch_key = 'Dataset', subset = True)
     sc.pp.scale(adata_all)
     sc.pp.pca(adata_all, n_comps=dimred)
     # sc.pp.neighbors(adata_all, use_rep='X_pca')
@@ -205,7 +205,7 @@ def integrate_processed_datasets(file_list: List[str],
     batch_size : int
         Batch size for scanorama_prior.
     dimred : int
-        Number of dimensions for scanorama_prior.
+        Number of dimensions for PCA.
     use_pct : bool
         Whether to use percent of cells for cellhint.
     **kwargs : dict
@@ -262,6 +262,8 @@ def integrate_processed_datasets(file_list: List[str],
         # Use log1p normalized data for scanorama
         adata_all = adata_all.raw.to_adata()
         adata_all.raw = adata_all
+        sc.pp.highly_variable_genes(adata_all, batch_key = 'Dataset', subset = True)
+
         logging.info(f"Merged dataset shape: {adata_all.shape}")
         
         harmonized_celltype_list = adata_all.obs[f"cell_type"].unique().tolist()
@@ -312,6 +314,8 @@ def integrate_processed_datasets(file_list: List[str],
         # Use log1p normalized data for scanorama
         adata_all = adata_all.raw.to_adata()
         adata_all.raw = adata_all
+        sc.pp.highly_variable_genes(adata_all, batch_key = 'Dataset', subset = True)
+
         logging.info(f"Merged dataset shape: {adata_all.shape}")
         
         # split data into batches
@@ -342,15 +346,16 @@ def integrate_processed_datasets(file_list: List[str],
             adata_all = merge_datasets(file_list, downsample, downsample_cells_per_label)
             adata_all.obs['cell_type_raw'] = adata_all.obs['cell_type'].copy()
             adata_all.write(output_path) # save the merged dataset
-            adata_all = preprocess_merged_dataset(adata_all, dimred=50)
+            adata_all = preprocess_merged_dataset(adata_all, dimred=dimred)
 
         else:
             adata_all = sc.read_h5ad(file_list[0]) # default to read the merged dataset
             adata_all = adata_all.raw.to_adata()
             adata_all.raw = adata_all
-            sc.pp.highly_variable_genes(adata_all, subset = True, n_top_genes=3000)
+            sc.pp.highly_variable_genes(adata_all, batch_key = 'Dataset', subset = True)
             sc.pp.scale(adata_all)
-            sc.pp.pca(adata_all, n_comps=50)
+            sc.pp.pca(adata_all, n_comps=dimred)
+            
             adata_all.obs['cell_type_raw'] = adata_all.obs['cell_type'].copy()
             adata_all.write(output_path) # save the merged dataset
         
@@ -382,8 +387,9 @@ def integrate_processed_datasets(file_list: List[str],
             # split data into batches
             # Use log1p normalized data for scanorama
             adata_all = adata_all.raw.to_adata()
-            adata_all.raw = adata_all
-            
+            adata_all.raw = adata_all        
+            sc.pp.highly_variable_genes(adata_all, batch_key = 'Dataset', subset = True)
+
             batches = adata_all.obs['Dataset'].cat.categories.tolist()
             adatas = []
             for batch in batches:
@@ -419,7 +425,7 @@ def integrate_processed_datasets(file_list: List[str],
             adata_all.obs[f"harmonized_cellhint"] = alignment.reannotation.loc[adata_all.obs_names, ['reannotation']].copy()
             
             adata_all.obs[f"cell_type"] = adata_all.obs[f"harmonized_cellhint"].apply(remove_none_type)
-            cellhint.integrate(adata_all, batch = 'Dataset', cell_type = f"cell_type")
+            cellhint.integrate(adata_all, batch = 'Dataset', cell_type = f"cell_type", use_rep='X_pca')
             
             alignment.write(alignment_path)
         
@@ -432,7 +438,7 @@ def integrate_processed_datasets(file_list: List[str],
             print("Harmonized cell type stored in 'harmonized_cellhint_prior' column.")
             adata_all.obs[f"harmonized_cellhint_prior"] = alignment.reannotation.loc[adata_all.obs_names, ['reannotation']].copy()
             adata_all.obs[f"cell_type"] = adata_all.obs[f"harmonized_cellhint_prior"].apply(remove_none_type)
-            cellhint_prior.integrate(adata_all, batch = 'Dataset', cell_type = f"cell_type")
+            cellhint_prior.integrate(adata_all, batch = 'Dataset', cell_type = f"cell_type", use_rep='X_pca')
 
             alignment.write(alignment_path)
             
