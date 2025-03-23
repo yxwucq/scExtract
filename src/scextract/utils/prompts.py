@@ -210,6 +210,8 @@ class Prompts:
         reasoning: This model is trained on immune cells and is suitable for the immune cell dataset in the article.
         </response>
         </example>""",
+        
+        'GET_TISSUE_NAME_PROMPT': """Please provide the tissue name the dataset is derived from. Only provide the tissue name without any additional information.""",
     }
     
     TOOL_PROMPTS = {
@@ -217,6 +219,8 @@ class Prompts:
         Please indicate the expression level of each gene in cluster_i in order, and summarize their expression states, focusing on specific outlier expressions. 
         For example: geneA: highest expression in cluster 0, not expressed in other clusters. geneB: not expressed in cluster 4, relatively high expression in cluster 2. 
         Please directly output your summary by gene. """,
+        
+        'GPTCELLTYPE_ANNOTATION_PROMPT': """Identify cell types of {tissuename} cells using the following markers separately for each\n row. Only provide the cell type name. Do not show numbers before the name.\n Some can be a mixture of multiple cell types. \n""",
         
         'NO_CONTEXT_ANNOTATION_PROMPT': """Identify cell types of cells using the following markers separately for each row. Only provide the cell type name.
         You should try to assign a **cell ontology** label to each cluster (e.g. B cell, T cell, etc.),  

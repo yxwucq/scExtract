@@ -1,3 +1,4 @@
+import re
 import anndata as ad
 import logging
 import os
@@ -17,6 +18,8 @@ from .parse_params import Params
 
 import configparser
 from ..utils.utils import convert_ensembl_to_symbol
+
+from .. import __version__
 
 def auto_extract(adata_path: str,
                  pdf_path: str, 
@@ -48,7 +51,7 @@ def auto_extract(adata_path: str,
     logging.getLogger().addHandler(file_handler)
     
     f = Figlet(font='slant')
-    logging.info('\n'+f.renderText('scExtract')+ '\n')
+    logging.info('\n'+f.renderText('scExtract')+f" v{__version__}"+'\n')
     colorama.init()
     logging.info(colored(f"Using {config['API']['MODEL']} as extraction model", color='cyan'))
     logging.info(colored(f"Using {config['API']['TOOL_MODEL']} as tool model", color='cyan'))
@@ -86,14 +89,12 @@ subsetting the data to a smaller size.", color='light_red'))
     
     logging.info(colored('2. Filtering and preprocessing data', color='cyan', attrs=['bold']))
     filter_response = claude_agent.chat(params.get_prompt('FILTER_PROMPT'))
-    # time.sleep(5)
     logging.info(filter_response)
     params.parse_response(filter_response)
     adata = filter(adata, params)
 
     logging.info(colored('3. Preprocessing data', color='cyan', attrs=['bold']))
     preprocess_response = claude_agent.chat(params.get_prompt('PREPROCESSING_PROMPT'))
-    # time.sleep(5)
     logging.info(preprocess_response)
     params.parse_response(preprocess_response)
     adata = preprocess(adata, params)
@@ -101,7 +102,6 @@ subsetting the data to a smaller size.", color='light_red'))
     # Clustering
     logging.info(colored('4. Clustering data', color='cyan', attrs=['bold']))
     clustering_response = claude_agent.chat(params.get_prompt('CLUSTERING_PROMPT'))
-    # time.sleep(5)
     logging.info(clustering_response)
     params.parse_response(clustering_response)
     adata = clustering(adata, params)
@@ -111,10 +111,25 @@ subsetting the data to a smaller size.", color='light_red'))
         claude_agent.clear_intermediate_messages()
     
     # Annotate
-    adata, marker_genes = get_marker_genes(adata, params)
+    logging.info(colored('5. Getting marker genes', color='cyan', attrs=['bold']))
+    adata, marker_genes = get_marker_genes(adata, params, fast_mode=config['OPTIONS'].getboolean('FAST_MODE'))
     logging.info(colored('Top 10 marker genes for each cluster:', color='yellow'))
     logging.info(colored(marker_genes, color='yellow'))
     
+    if config['OPTIONS'].getboolean('BENCHMARK_GPTCELLTYPE'):
+        logging.info(colored('Benchmarking GPTCellType', color='cyan', attrs=['bold']))
+        tissue_name = claude_agent.chat(params.get_prompt('GET_TISSUE_NAME_PROMPT'))
+        logging.info(colored(f'Tissue name: {tissue_name}', color='yellow'))
+        benchmark_gptcelltype_prompt = params.get_tool_prompt('GPTCELLTYPE_ANNOTATION_PROMPT')
+        benchmark_gptcelltype_prompt += "\n".join([f"{k}:{','.join(v)}" for k, v in marker_genes.items()])
+        benchmark_gptcelltype_response = claude_agent._tool_retrieve(messages=[{"role": "user", "content": benchmark_gptcelltype_prompt.replace('{tissuename}', tissue_name)}])
+        logging.info(colored(benchmark_gptcelltype_response, color='green'))
+        benchmark_gptcelltype_response_list = [x for x in benchmark_gptcelltype_response.split('\n') if x]
+        benchmark_gptcelltype_response_list = [re.sub(r'^\d+:\s*', '', string) for string in benchmark_gptcelltype_response_list]
+        assert len(benchmark_gptcelltype_response_list) == len(marker_genes), 'Number of responses does not match number of clusters.'
+        gptcelltype_annotation_dict = {k: v for k, v in enumerate(benchmark_gptcelltype_response_list)}
+        adata = simple_annotate(adata, gptcelltype_annotation_dict, params, 'gptcelltype_annotation')
+
     if benchmark_no_context_key is not None:
         benchmark_no_context_prompt = params.get_tool_prompt('NO_CONTEXT_ANNOTATION_PROMPT').replace('Some can be a mixture of multiple cell types.',
                                                                                         'Some can be a mixture of multiple cell types.' + str(marker_genes))
@@ -127,17 +142,15 @@ subsetting the data to a smaller size.", color='light_red'))
     annotate_prompt = params.get_prompt('ANNOTATION_PROMPT').replace(f"{starting_part}", 
                                                                        f"{starting_part}\n{marker_genes}")
     
-    # time.sleep(5)
-    logging.info(colored('5. Annotating clusters', color='cyan', attrs=['bold']))
+    logging.info(colored('6. Annotating clusters', color='cyan', attrs=['bold']))
     annotate_response = claude_agent.chat(annotate_prompt, max_tokens=1500)
     logging.info(colored(annotate_response, color='yellow'))
     annotation_dict = params.parse_annotation_response(annotate_response)
     if not params['reannotation']:
         adata = annotate(adata, annotation_dict, params, final=True)
     else:
-        # time.sleep(30)
         adata = annotate(adata, annotation_dict, params, final=False)
-        logging.info(colored('6. Reannotating clusters', color='cyan', attrs=['bold']))
+        logging.info(colored('7. Reannotating clusters', color='cyan', attrs=['bold']))
         query_response = claude_agent.chat(params.get_prompt('REVIEW_PROMPT'))
         logging.info(query_response)
         params.parse_response(query_response)
@@ -153,7 +166,6 @@ subsetting the data to a smaller size.", color='light_red'))
                 middle_start = 're-annotate the clusters into cell types using a dictionary format:'
                 reannotate_prompt = params.get_prompt('REANNOTATION_PROMPT').replace(f"{middle_start}", 
                                                                                        f"{middle_start}\n{query_genes_exp_dict_summary}")
-                # time.sleep(30)
                 reannotate_response = claude_agent.chat(reannotate_prompt, max_tokens=2000)
                 logging.info(reannotate_response)
                 reannotation_dict = params.parse_annotation_response(reannotate_response)

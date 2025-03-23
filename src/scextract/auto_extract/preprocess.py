@@ -43,7 +43,7 @@ def filter(adata: ad.AnnData,
 
     check_result = is_normalized_and_log1p(adata.X.toarray())
     if check_result['normalized'] or check_result['log1p']: 
-        logging.warn("The expression matrix is already normalized and/or log1p transformed. \
+        logging.warning("The expression matrix is already normalized and/or log1p transformed. \
                        The filtering steps will be skipped.")
         return adata
 
@@ -85,18 +85,19 @@ def preprocess(adata: ad.AnnData,
     check_result = is_normalized_and_log1p(adata.X.toarray())
     if check_result['log1p']:
         check_result['normalized'] = True # if log1p transformed, it is normalized
+        adata.layers['counts'] = csr_matrix(np.expm1(adata.X.toarray())) # revert log1p transformation
 
     # Normalize total target sum
     if params['normalize_total_target_sum'] is not None and not check_result['normalized']:
         sc.pp.normalize_total(adata, target_sum=params['normalize_total_target_sum'])
     elif check_result['normalized']:
-        logging.warn("The expression matrix is already normalized. The normalization step will be skipped.")
+        logging.warning("The expression matrix is already normalized. The normalization step will be skipped.")
     
     # Log1p transform
     if params['log1p_transform']:
         sc.pp.log1p(adata)
     elif check_result['log1p']:
-        logging.warn("The expression matrix is already log1p transformed. The log1p transformation step will be skipped.")
+        logging.warning("The expression matrix is already log1p transformed. The log1p transformation step will be skipped.")
         
     # Batch correction
     # if params['batch_correction']:
@@ -137,6 +138,10 @@ def clustering(adata: ad.AnnData,
     elif params['unsupervised_cluster_method'] == 'louvain':
         clustering_key = 'louvain'
         clustering_method = sc.tl.louvain
+    else:
+        warnings.warn(f"Invalid clustering method: {params['unsupervised_cluster_method']}, using default: leiden")
+        clustering_key = 'leiden'
+        clustering_method = sc.tl.leiden
     
     # test resolution to meet the number of groups
     for resolution in [0.1, 0.3, 0.5, 0.7, 0.9]:

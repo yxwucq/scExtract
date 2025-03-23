@@ -8,6 +8,7 @@ from .parse_params import Params
 
 def get_marker_genes(adata: ad.AnnData,
                      params: Params,
+                     fast_mode: bool = False,
                      ) -> tuple[ad.AnnData, dict]:
     """
     Find marker genes for each cluster.
@@ -18,7 +19,10 @@ def get_marker_genes(adata: ad.AnnData,
     warnings.filterwarnings('ignore', category=RuntimeWarning)    
     warnings.simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
     # use wilcoxon rank sum test to find differentially expressed genes
-    sc.tl.rank_genes_groups(adata, cluster_key, method='wilcoxon', n_genes=20, tie_correct=True, use_raw=False)
+    if not fast_mode:
+        sc.tl.rank_genes_groups(adata, cluster_key, method='wilcoxon', n_genes=20, tie_correct=True, use_raw=False)
+    else:
+        sc.tl.rank_genes_groups(adata, cluster_key, method='t-test', n_genes=20, use_raw=False)
     
     marker_genes = {}
     for cluster in adata.obs[cluster_key].cat.categories:

@@ -3,13 +3,13 @@
 import os
 
 configfile: "config_extract.yaml"
-print(f"configfile: config.yaml")
+print(f"configfile: config_extract.yaml")
 
 project_dir = config["project_dir"]
 # name_list = [x for x in os.listdir(project_dir) if os.path.isdir(os.path.join(project_dir, x))]
-name_list = glob_wildcards(project_dir + "/{sample}" + "/raw_data/{sample}_raw.h5ad").sample
+name_list = glob_wildcards(project_dir + "/{sample}" + "/raw_data/{sample}_no_methods.txt").sample
 print(f"project_dir: {project_dir}")
-name_list = [x for x in name_list if 'sample16' in x]
+# name_list = [x for x in name_list if 'sample16' in x]
 
 if config['applied_files'] != 'all':
     name_list = [x for x in name_list if config['applied_files'] in x]
@@ -21,18 +21,18 @@ def tempd(file):
 
 rule all:
     input:
-        expand(os.path.join(project_dir, "{sample}", "{sample}_" + config["output_suffix"] + "_benchmark.h5ad"), sample=name_list)
+        expand(os.path.join(project_dir, "{sample}", "{sample}_" + config["output_suffix"] + "no_met_benchmark.h5ad"), sample=name_list)
 
 rule AutoExtract:
     input:
         input_adata=os.path.join(project_dir, "{sample}", "raw_data", "{sample}_raw.h5ad"),
-        pdf_file=os.path.join(project_dir, "{sample}", "raw_data", "{sample}.pdf"),
+        pdf_file=os.path.join(project_dir, "{sample}", "raw_data", "{sample}_no_methods.txt"),
         config_file=os.path.join(project_dir, config["init_config_ini"]),
     params:
         output_dir=os.path.join(project_dir, "{sample}"),
-        output_name="{sample}_" + config["output_suffix"] + "_extracted.h5ad",
+        output_name="{sample}_" + config["output_suffix"] + "no_met_extracted.h5ad",
     output:
-        output_adata=tempd(os.path.join(project_dir, "{sample}", "{sample}_" + config["output_suffix"] + "_extracted.h5ad")),
+        output_adata=tempd(os.path.join(project_dir, "{sample}", "{sample}_" + config["output_suffix"] + "no_met_extracted.h5ad")),
         output_config_pkl=os.path.join(project_dir, "{sample}", config["config_pkl"]),
         output_log=os.path.join(project_dir, "{sample}", config["log_file"]),
     shell: """
@@ -100,12 +100,12 @@ rule AutoExtract:
 
 rule IntersectTrue:
     input:
-        with_sctype_adata=os.path.join(project_dir, "{sample}", "{sample}_" + config["output_suffix"] + "_extracted.h5ad"),
+        with_sctype_adata=os.path.join(project_dir, "{sample}", "{sample}_" + config["output_suffix"] + "no_met_extracted.h5ad"),
         true_adata=os.path.join(project_dir, "{sample}", "raw_data" ,"{sample}_true.h5ad"),
     params:
         true_key=config["true_key"],
     output:
-        with_true_adata=tempd(os.path.join(project_dir, "{sample}", "{sample}_" + config["output_suffix"] + "_with_true.h5ad")),
+        with_true_adata=tempd(os.path.join(project_dir, "{sample}", "{sample}_" + config["output_suffix"] + "no_met_with_true.h5ad")),
     run:
         import scanpy as sc
         adata = sc.read_h5ad(input.with_sctype_adata)
@@ -116,7 +116,7 @@ rule IntersectTrue:
 
 rule Benchmark:
     input:
-        with_true_adata=os.path.join(project_dir, "{sample}", "{sample}_" + config["output_suffix"] + "_with_true.h5ad"),
+        with_true_adata=os.path.join(project_dir, "{sample}", "{sample}_" + config["output_suffix"] + "no_met_with_true.h5ad"),
         output_config_pkl=os.path.join(project_dir, "{sample}", config["config_pkl"]),
         config_file=os.path.join(project_dir, config["init_config_ini"]),
     params:
@@ -125,8 +125,8 @@ rule Benchmark:
         predict_group_key=config["predict_group_key"],
         similarity_key=config["similarity_key"],
     output:
-        output_benchmark=os.path.join(project_dir, "{sample}", "{sample}_" + config["output_suffix"] + "_benchmark.h5ad"),
-        output_metrics=os.path.join(project_dir, "{sample}", "{sample}_" + config["output_suffix"] + "_metrics.txt"),
+        output_benchmark=os.path.join(project_dir, "{sample}", "{sample}_" + config["output_suffix"] + "no_met_benchmark.h5ad"),
+        output_metrics=os.path.join(project_dir, "{sample}", "{sample}_" + config["output_suffix"] + "no_met_metrics.txt"),
     shell: """
         scExtract benchmark \
             --adata_path {input.with_true_adata} \
