@@ -1,14 +1,20 @@
 from copy import deepcopy
 from typing import List, Dict
+import functools
 import re
 import configparser
+import logging
+from termcolor import colored
 
+from .agent import Claude3, Openai
 from ..utils.prompts import Prompts
 
 class Params:
     def __init__(self, config_path: str = 'config.ini'):
         config = configparser.ConfigParser()
         config.read(config_path)
+        self.config = config
+        self.config_path = config_path
         self.default_params = deepcopy(config['DEFAULT_PARAMS'])
         self.params = format_params(self.default_params)
         self.list_type_params = Prompts().LIST_TYPE_PARAMS
@@ -22,11 +28,35 @@ class Params:
     
     def reset_params(self):
         self.params = dict(self.default_params)
+        
+    def parse_retry_decorator(func):
+        """
+        Decorator to retry the function if it fails
+        """
+        @functools.wraps(func)
+        def wrapper(self, response, *args, **kwargs):
+            try:
+                return func(self, response, *args, **kwargs)
+            except Exception as e:
+                logging.warning(colored(f"Response parsing failed: {e}, trying to reformat the response", 'magenta'))
+                logging.warning(colored(f"Original response: {response}", 'magenta'))
+                if 'openai' in self.config['API']['TYPE']:
+                    claude_agent = Openai(pdf_path=None, config_path=self.config_path)
+                elif 'claude' in self.config['API']['TYPE']:
+                    claude_agent = Claude3(pdf_path=None, config_path=self.config_path)
+                
+                reformat_prompts = Prompts().get_tool_prompt('REFORMAT_RESPONSE_PROMPT') + "\n" + response + "\n" + "The Error is: " + str(e)
+                new_response = claude_agent._tool_retrieve(messages=[{"role": "user", "content": reformat_prompts}])
+                logging.warning(colored(f"Reformatted response: {new_response}", 'magenta'))
+                return func(self, new_response, *args, **kwargs)
+        return wrapper
     
-    def parse_annotation_response(self, 
+    @parse_retry_decorator
+    def parse_annotation_response(self,
                                   annotation_response: str,
                                   simple_annotation: bool = False,
                                   ) -> Dict[int, List[str]|str]:
+        annotation_response = '\n'.join([x.split('#')[0] for x in annotation_response.split('\n')])
         annotation_response = annotation_response.replace('\n', '')
         try:
             annotation_dict = re.search(r'annotation_dict\s*[:=]\s*({.*?})', annotation_response, re.DOTALL)
@@ -56,6 +86,7 @@ class Params:
         
         return annotation_dict
     
+    @parse_retry_decorator
     def parse_response(self, filter_response: str):
         filter_response = filter_response.split('\n')
         

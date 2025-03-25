@@ -124,8 +124,10 @@ subsetting the data to a smaller size.", color='light_red'))
         benchmark_gptcelltype_prompt += "\n".join([f"{k}:{','.join(v)}" for k, v in marker_genes.items()])
         benchmark_gptcelltype_response = claude_agent._tool_retrieve(messages=[{"role": "user", "content": benchmark_gptcelltype_prompt.replace('{tissuename}', tissue_name)}])
         logging.info(colored(benchmark_gptcelltype_response, color='green'))
-        benchmark_gptcelltype_response_list = [x for x in benchmark_gptcelltype_response.split('\n') if x]
-        benchmark_gptcelltype_response_list = [re.sub(r'^\d+:\s*', '', string) for string in benchmark_gptcelltype_response_list]
+        benchmark_gptcelltype_response_list = [x for x in benchmark_gptcelltype_response.split('\n') if x and not x.startswith('Here are')]
+        if any(re.match(r'^\d+:\s*', x) for x in benchmark_gptcelltype_response_list):
+            benchmark_gptcelltype_response_list = [x for x in benchmark_gptcelltype_response_list if re.match(r'^\d+:\s*', x)]
+            benchmark_gptcelltype_response_list = [re.sub(r'^\d+:\s*', '', string) for string in benchmark_gptcelltype_response_list]
         assert len(benchmark_gptcelltype_response_list) == len(marker_genes), 'Number of responses does not match number of clusters.'
         gptcelltype_annotation_dict = {k: v for k, v in enumerate(benchmark_gptcelltype_response_list)}
         adata = simple_annotate(adata, gptcelltype_annotation_dict, params, 'gptcelltype_annotation')

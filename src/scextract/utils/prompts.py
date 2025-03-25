@@ -264,6 +264,24 @@ class Prompts:
 
         This is the output of the top 5 marker genes for each cluster:
         """,
+        'REFORMAT_RESPONSE_PROMPT': """The response format is incorrect. Please reformat the response to the correct format. The response should be strictly like one of the <response> blocks in the example below:
+        <response>
+        annotation_dict: {0: ['T cell', 'High', 'Article-defined'],
+                            1: ['B cell', 'Medium', 'Knowledge-based']}
+                            
+        reasoning: The expression of CD3E and CD3D is high in cluster 0, which is a typical marker of T cells. The expression of CD19 is medium high in cluster 1, which is a typical marker of B cells, but not as high as in cluster 2
+        </response>
+        <response>
+        filter_cells_min_genes: 300
+        ...
+        reasoning: The article mentions that 'We filter out cells expressing fewer than 300 genes'
+        </response>
+        <response>
+        genes_to_query: ['CD8A', 'CD14', 'CD34']
+
+        reasoning: These genes are classical markers for CD8+ T cells, monocytes/macrophages, and hematopoietic stem cells, respectively. Querying their expression levels can help refine the annotation of clusters showing ambiguous marker profiles, such as Cluster 2 labeled as 'Unknown'.
+        </response>
+        """,
     }
     
     def __init__(self):
