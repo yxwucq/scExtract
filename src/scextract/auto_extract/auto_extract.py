@@ -178,7 +178,28 @@ subsetting the data to a smaller size.", color='light_red'))
         else:
             logging.info(colored('No genes to query.', color='yellow'))
             adata = annotate(adata, annotation_dict, params, final=True)
-    
+
+    if config['OPTIONS'].getboolean('ADD_CELLTYPE_DESCRIPTION'):
+        logging.info(colored('Adding cell type description', color='cyan', attrs=['bold']))
+        cluster_key = params.get_params['unsupervised_cluster_method']
+        celltype_list = list(adata.obs[cluster_key].unique())
+        celltype_description_prompt = params.get_prompt('ADD_CELLTYPE_DESCRIPTION_PROMPT').replace('{celltype_list}', str(celltype_list))
+        # Description with no context
+        celltype_description_response = claude_agent._tool_retrieve(messages=[{"role": "user", "content": celltype_description_prompt}], max_tokens=2000)
+        logging.info(celltype_description_response)
+        celltype_description_dict = params.parse_annotation_response(celltype_description_response, simple_annotation=True)
+        adata = simple_annotate(adata, celltype_description_dict, params, f'{cluster_key}_description', cluster_key)
+
+    if config['OPTIONS'].getboolean('ADD_CELLTYPE_FUNCTION'):
+        logging.info(colored('Adding cell type function', color='cyan', attrs=['bold']))
+        cluster_key = params.get_params['unsupervised_cluster_method']
+        celltype_list = list(adata.obs[cluster_key].unique())
+        celltype_function_prompt = params.get_prompt('ADD_CELLTYPE_FUNCTION_PROMPT').replace('{celltype_list}', str(celltype_list))
+        celltype_function_response = claude_agent.chat(celltype_function_prompt, max_tokens=2000)
+        logging.info(celltype_function_response)
+        celltype_function_dict = params.parse_annotation_response(celltype_function_response, simple_annotation=True)
+        adata = simple_annotate(adata, celltype_function_dict, params, f'{cluster_key}_function', cluster_key)
+
     if config['API'].getboolean('CONVERT_EMBEDDING'):
         params.embedding_dict = {}
         for key in adata.obs.columns:

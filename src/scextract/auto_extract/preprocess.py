@@ -150,8 +150,7 @@ def clustering(adata: ad.AnnData,
         
         if groups_num >= params['leiden_or_louvain_group_numbers']:
             if abs(groups_num - params['leiden_or_louvain_group_numbers']) > 3:
-                warnings.warn(f"Detected {groups_num} groups, which quite differs from the \
-                              expected {params['leiden_or_louvain_group_numbers']} groups")
+                warnings.warn(f"Detected {groups_num} groups, which quite differs from the expected {params['leiden_or_louvain_group_numbers']} groups")
             break
         
     # Visualize

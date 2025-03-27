@@ -212,6 +212,38 @@ class Prompts:
         </example>""",
         
         'GET_TISSUE_NAME_PROMPT': """Please provide the tissue name the dataset is derived from. Only provide the tissue name without any additional information.""",
+        
+        'ADD_CELLTYPE_DESCRIPTION_PROMPT': """Please provide short descriptions for cell types you have annotated: 
+        
+        {celltype_list}
+        
+        Descriptions should be concise and informative, and can include the function, location, or any other relevant information about the cell type in the context of the dataset.
+        
+        OUTPUT_FORMAT(description of the parameters is in the curly braces, do not include the description in the output):
+        celltype_descriptors: {cell_type1: 'description1', cell_type2: 'description2', ...}
+        
+        <example>
+        <response>
+        celltype_descriptors: {'T cell': 'T cells block the growth of breast cancer cells by releasing cytotoxic granules',
+                                'B cell': 'B cells produce antibodies to neutralize pathogens and prevent infection', ...}
+        </response>
+        </example>""",
+        
+        'ADD_CELLTYPE_FUNCTION_PROMPT': """Please provide the short function discussed in the article for each of the cell types you have annotated:
+        
+        {celltype_list}
+        
+        If the function is not mentioned in the article, use 'N/A' at the corresponding position.
+        
+        OUTPUT_FORMAT(description of the parameters is in the curly braces, do not include the description in the output):
+        celltype_functions: {cell_type1: 'function1', cell_type2: 'function2', ...}
+        
+        <example>
+        <response>
+        celltype_functions: {'T cell': 'T cells block the growth of breast cancer cells by releasing cytotoxic granules',
+                            'B cell': 'B cells produce antibodies to neutralize pathogens and prevent infection', ...}
+        </response>
+        </example>""",
     }
     
     TOOL_PROMPTS = {

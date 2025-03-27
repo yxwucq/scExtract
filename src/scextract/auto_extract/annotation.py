@@ -84,14 +84,21 @@ def simple_annotate(adata: ad.AnnData,
                     annotation_dict: Dict[int, str],
                     params: Params,
                     key_added: str,
+                    cluster_key: str = None,
                     ) -> ad.AnnData:
     
-    cluster_key = params.get_params['unsupervised_cluster_method']
+    if cluster_key is None:
+        cluster_key = params.get_params['unsupervised_cluster_method']
     
     if key_added in adata.obs.keys():
         raise ValueError(f"{key_added} already exists in adata.obs.")
     
-    adata.obs[key_added] = adata.obs[cluster_key].astype(int).map(annotation_dict)
+    try:
+        adata.obs[cluster_key] = adata.obs[cluster_key].astype(int)
+    except:
+        pass
+    
+    adata.obs[key_added] = adata.obs[cluster_key].map(annotation_dict)
     adata.obs[key_added] = adata.obs[key_added].astype('category')
     
     return adata
