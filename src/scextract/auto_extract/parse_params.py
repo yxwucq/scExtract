@@ -48,6 +48,25 @@ class Params:
                 reformat_prompts = Prompts().get_tool_prompt('REFORMAT_RESPONSE_PROMPT') + "\n" + response + "\n" + "The Error is: " + str(e)
                 new_response = claude_agent._tool_retrieve(messages=[{"role": "user", "content": reformat_prompts}])
                 logging.warning(colored(f"Reformatted response: {new_response}", 'magenta'))
+                if self.config['OPTIONS']['MANUAL_REFORMAT_RESPONSE']:
+                    try:
+                        return func(self, new_response, *args, **kwargs)
+                    except Exception as e:
+                        logging.warning(f"Automatic reformatting failed: {str(e)}")
+                        logging.warning(colored(f"Original response: {response}", 'magenta'))
+                        logging.warning("Please reformat the response manually")
+                        logging.warning("Input 'END' on a new line to end the input")
+                        
+                        lines = []
+                        while True:
+                            line = input()
+                            if line.strip() == 'END':
+                                break
+                            lines.append(line)
+                        
+                        logging.warning(f"Submitted new response", 'magenta')
+                        new_response = '\n'.join(lines)
+                        return func(self, new_response, *args, **kwargs)
                 return func(self, new_response, *args, **kwargs)
         return wrapper
     
