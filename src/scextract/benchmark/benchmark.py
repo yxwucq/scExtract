@@ -12,6 +12,7 @@ import pickle
 import requests
 from requests.adapters import HTTPAdapter, Retry
 
+from ..auto_extract.parse_params import Params 
 from ..auto_extract.agent import get_cell_type_embedding_by_llm
 
 def request_ols(query_cell_type: str,
@@ -119,8 +120,12 @@ def benchmark_annotation(adata_path : str,
         predict_group_key_list = predict_group_key.split(',')
         similarity_key_list = similarity_key.split(',')
 
-        with open(output_config_pkl, 'rb') as f:
-            config = pickle.load(f)
+        if output_config_pkl is not None:
+            with open(output_config_pkl, 'rb') as f:
+                config = pickle.load(f)
+        else: # avoid loading config file
+            config = Params(config_path)
+            config.embedding_dict = {}
         
         ari_list = []
         predict_group_key_list_cp = predict_group_key_list.copy()

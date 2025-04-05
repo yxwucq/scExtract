@@ -133,7 +133,7 @@ class Prompts:
         Based on gene expression and the detailed discussion from the article, annotate these clusters into cell types using a dictionary format.
         Please provide the 'cell type', 'certainty', 'source' and reasoning for each cluster.
         You may annotate different groups with the same cell type. You should try to assign a **cell ontology** label to each cluster (e.g. B cell, T cell, etc.),
-        with modification to make your annotations more concordant with the original paper  (e.g. 'CD4+ T cell' or 'T cell 2').
+        with modification to make your annotations more concordant with the original paper  (e.g. 'CD4+ T cell' or 'T cell 2'). Some can be a mixture of multiple cell types.
         If you cannot tell the cell type, name it as 'Unknown'. Be sure to provide reasoning for the annotation.
         
         OUTPUT_FORMAT(description of the parameters is in the curly braces, do not include the description in the output,

@@ -74,11 +74,12 @@ class Params:
     def parse_annotation_response(self,
                                   annotation_response: str,
                                   simple_annotation: bool = False,
+                                  annotation_type: str = 'annotation_dict',
                                   ) -> Dict[int, List[str]|str]:
         annotation_response = '\n'.join([x.split('#')[0] for x in annotation_response.split('\n')])
         annotation_response = annotation_response.replace('\n', '')
         try:
-            annotation_dict = re.search(r'annotation_dict\s*[:=]\s*({.*?})', annotation_response, re.DOTALL)
+            annotation_dict = re.search(annotation_type+r'\s*[:=]\s*({.*?})', annotation_response, re.DOTALL)
         except:
             annotation_dict = re.search(r'({.*?})', annotation_response, re.DOTALL)
         annotation_dict = annotation_dict.group(1)
