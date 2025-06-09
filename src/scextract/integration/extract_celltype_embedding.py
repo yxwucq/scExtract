@@ -16,7 +16,7 @@ import sys
 
 from ..auto_extract.agent import get_cell_type_embedding_by_llm
 
-def extract_celltype_embedding(file_list: str,
+def extract_celltype_embedding(file_list: List[str],
                                output_embedding_pkl: str,
                                output_individual_config_pkls: Optional[str] = None,
                                cell_type_column: Optional[str] = None,

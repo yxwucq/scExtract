@@ -18,12 +18,12 @@ def parse_args():
     
     auto_extract_parser.add_argument('--adata_path', '-i', type=str, required=True, help='Path to the raw data in AnnData format.')
     auto_extract_parser.add_argument('--pdf_path', '-p', type=str, required=True, help='Path to the PDF file containing the article. should in pdf or txt format.')
-    auto_extract_parser.add_argument('--marker_genes_excel_path', '-m', type=str, help='Path to the Excel file containing the marker genes. should in xlsx or xls format.')
     auto_extract_parser.add_argument('--config_path', '-f', type=str, default='config.ini', help='System config file path.')
     auto_extract_parser.add_argument('--output_dir', '-d', type=str, default='Processed', help='Directory to save the processed data.')
+    auto_extract_parser.add_argument('--output_name', '-o', type=str, default='processed.h5ad', help='Name of the output file.')
     auto_extract_parser.add_argument('--output_config_pkl', '-c', type=str, default='config.pkl', help='Name of the output config file, storing the config of the extraction and embeddings')
     auto_extract_parser.add_argument('--output_log', '-l', type=str, default='auto_extract.log', help='Name of the output log file.')
-    auto_extract_parser.add_argument('--output_name', '-o', type=str, default='processed.h5ad', help='Name of the output file.')
+    auto_extract_parser.add_argument('--marker_genes_excel_path', '-m', type=str, help='Path to the Excel file containing the marker genes. should in xlsx or xls format.')
     auto_extract_parser.add_argument('--benchmark_no_context_key', '-b', type=str, default=None, help='If specified, Directly get annotation from marker genes without article context for benchmarking, \
                                     the result will be saved in adata.obs[benchmark_no_context_key].')
     
@@ -48,13 +48,13 @@ def parse_args():
     benchmark_parser.add_argument('--adata_path', '-i', type=str, required=True, help='Path to the processed data in AnnData format.')
     benchmark_parser.add_argument('--output_path', '-o', type=str, help='Path to save the output file. If not specified, the input file will be overwritten.')
     benchmark_parser.add_argument('--config_path', '-f', type=str, default='config.ini', help='System config file path.')
-    benchmark_parser.add_argument('--output_config_pkl', '-c', type=str, default='config.pkl', help='Name of the output config file, storing the config of the extraction and embeddings')
+    benchmark_parser.add_argument('--output_config_pkl', '-c', type=str, default='config.pkl', help='Name of the output config file, storing the extracted processing parameters and cell type embeddings')
     benchmark_parser.add_argument('--result_metrics_path', '-r', type=str, help='Path to save the metrics of the benchmark results.')
-    benchmark_parser.add_argument('--method', '-m', type=str, default='ols_api', help='Method to use for annotation. Support ols_api and embedding.')
+    benchmark_parser.add_argument('--method', '-m', type=str, default='ols_api', help='Method to use for benchmarking annotation. Support ols_api and embedding.', choices=['ols_api', 'embedding'])
     benchmark_parser.add_argument('--predict_group_key', '-p', type=str, help='Key of the predicted group in adata.obs. Support multiple keys separated by comma.')
     benchmark_parser.add_argument('--true_group_key', '-t', type=str, required=True, help='Key of the true group in adata.obs.')
     benchmark_parser.add_argument('--similarity_key', '-s', type=str, default='similarity', help='Key to save the similarity results. Support multiple keys separated by comma. Order should be the same as predict_group_key.')
-    benchmark_parser.add_argument('--ontology', '-l', type=str, default='cl', help='Ontology to use for annotation.')
+    benchmark_parser.add_argument('--ontology', '-l', type=str, default='cl', help='Ontology to use for annotation. Only valid for ols_api method.')
 
     add_singler_annotation = subparsers.add_parser('add_singler_annotation', help='Annotate single-cell data using py&c++ implementation of singler.',
                                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -91,8 +91,8 @@ def parse_args():
     extract_celltype_embedding_parser.add_argument('--output_embedding_pkl', '-o', type=str, required=True, help='Path to save the output embedding dictionary.')
     extract_celltype_embedding_parser.add_argument('--config_path', '-f', type=str, default='config.ini', help='System config file path.')
     extract_celltype_embedding_parser.add_argument('--cell_type_column', '-l', type=str, help='Column name of the cell type in the processed data.')
-    extract_celltype_embedding_parser.add_argument('--output_individual_config_pkls', '-c', type=str, help='Name of the output config files, storing the config of the extraction and embeddings')
-
+    extract_celltype_embedding_parser.add_argument('--output_individual_config_pkls', '-c', type=str, help='Name of the output config files of scExtract auot_extract, storing the config of the extraction and embeddings. \
+                                            If specified, the cell type embeddings will be extracted from the specified config file.')
     integrate_parser = subparsers.add_parser('integrate', help='Integrate multiple processed datasets.',
                                             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     
@@ -104,10 +104,10 @@ def parse_args():
     integrate_parser.add_argument('--embedding_dict_path', '-e', type=str, help='Path to the cell type embedding dictionary. Only used for local. Can be generated by extract_celltype_embedding.')
     integrate_parser.add_argument('--downsample', '-d', action='store_true', help='Whether to downsample the cells.')
     integrate_parser.add_argument('--downsample_cells_per_label', '-c', type=int, default=1000, help='Number of cells to downsample per label.')
-    integrate_parser.add_argument('--search_factor', '-s', type=int, default=5, help='Increased fold of the search space for the prior optimization.')
+    integrate_parser.add_argument('--search_factor', '-s', type=int, default=5, help='Increased fold of the search space for the prior optimization. Only valid for scanorama_prior when approx is True.')
     integrate_parser.add_argument('--approx', '-x', action='store_true', help='Whether to use approximate optimization.')
-    integrate_parser.add_argument('--use_gpu', '-g', action='store_true', help='Whether to use GPU for optimization.')
-    integrate_parser.add_argument('--batch_size', '-b', type=int, default=5000, help='Batch size for processing.')
-    integrate_parser.add_argument('--use_pct', '-p', action='store_true', help='Whether to use pct for cellhint.')
+    integrate_parser.add_argument('--use_gpu', '-g', action='store_true', help='Whether to use GPU for optimization. Cupy is required.')
+    integrate_parser.add_argument('--batch_size', '-b', type=int, default=5000, help='Batch size for processing. Lower batch size will use less memory.')
+    integrate_parser.add_argument('--use_pct', '-p', action='store_true', help='Whether to use pct for cellhint. Default is False to align with original cellhint.')
     integrate_parser.add_argument('--dimred', '-r', type=int, default=100, help='Dimensionality of the integrated embedding.')
     return parser.parse_args()

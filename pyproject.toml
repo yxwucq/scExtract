@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "scExtract"
-version = "0.1.3"
+version = "0.2.0"
 description = "Automatically processing single-cell data from articles"
 readme = "README.md"
 authors = [

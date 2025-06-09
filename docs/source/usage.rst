@@ -29,7 +29,7 @@ For annotation-to-embedding conversion:
 .. code-block:: bash
     
     # Whether to convert the embedding for later use
-    CONVERT_EMBEDDING = true
+    CONVERT_EMBEDDING = false
     EMBEDDING_MODEL = text-embedding-3-large
     API_STYLES = azure
     # Note: If you are using the openai API and set the API_STYLES to same,

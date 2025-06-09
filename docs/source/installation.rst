@@ -112,7 +112,7 @@ If you want to use the following features, you will need to install additional p
      - >=1.0.0
      - Cell type harmonization
    * - singler
-     - >=0.1.2
+     - >=0.4.1
      - Cell type annotation
    * - scanorama
      -

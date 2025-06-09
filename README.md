@@ -106,8 +106,7 @@ scExtract benchmark \
 ```
 
 ## Other methods
-### add singleR annotation
-see `scExtract add_singler_annotation -h`
+scExtract supports external annotation methods using `add_singler_annotation`, `add_sctype_annotation`, `add_celltypist_annotation`
 
 ## Example
 
