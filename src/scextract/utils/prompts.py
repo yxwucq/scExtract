@@ -196,6 +196,61 @@ class Prompts:
         reasoning: The expression of CD3E and CD3D is high in cluster 0, which is a typical marker of T cells. The expression of CD19 is medium high in cluster 1, which is a typical marker of B cells, but not as high as in cluster 2
         </response>
         </example>""",
+
+        'ANNOTATION_PROMPT_VERBOSE': """This is the output of the top 10 marker genes for each cluster:
+        {authors_defined_marker_genes}
+        Based on gene expression and the detailed discussion from the article, annotate these clusters into cell types using a dictionary format.
+        Please provide the 'cell type', 'certainty', 'source', 'tissue', and reasoning for each cluster.
+        You may annotate different groups with the same cell type. You should try to assign a **cell ontology** label to each cluster (e.g. B cell, T cell, etc.),
+        with modification to make your annotations more concordant with the original paper  (e.g. 'CD4+ T cell' or 'T cell 2').
+        If you cannot tell the cell type, name it as 'Unknown'. Be sure to provide reasoning for the annotation.
+        
+        OUTPUT_FORMAT(description of the parameters is in the curly braces, do not include the description in the output,
+                each value in the [] should be quoted so that it is clear that it is a string value):
+        annotation_dict: {0: [cell_type, 
+                certainty, (value chosen from [Low, Medium, High])
+                source, (value chosen from [Article-defined, Knowledge-based])
+                tissue, (value chosen from [Brain, Liver, Kidney, Heart, Lung...])
+                disease, (value chosen from [Healthy, Cancer, Alzheimer, Parkinson...])
+                developmental_stage], (value chosen from [Embryonic, Fetal, Neonatal, Adult...])
+                ...}. "
+                
+        reasoning: {str, reasoning for the re-annotation}
+        
+        <example>
+        <response>
+        annotation_dict: {0: ['T cell', 'High', 'Article-defined', 'Blood', 'Healthy', 'Adult'],
+                            1: ['B cell', 'Medium', 'Knowledge-based', 'Blood', 'Healthy', 'Adult']}
+                            
+        reasoning: The expression of CD3E and CD3D is high in cluster 0, which is a typical marker of T cells. The expression of CD19 is medium high in cluster 1, which is a typical marker of B cells, but not as high as in cluster 2
+        </response>
+        </example>""",
+
+        'REANNOTATION_PROMPT_VERBOSE': """Based on the gene expression data queried and previous annotation, please re-annotate the clusters into cell types using a dictionary format:
+    
+        If you are still unsure about the cell type, you can mark it as 'Unknown'. Be sure to provide reasoning for the re-annotation. You can also change
+        the previous annotation if you think it is necessary.
+    
+        OUTPUT_FORMAT(description of the parameters is in the curly braces, do not include the description in the output,
+                each value in the [] should be quoted so that it is clear that it is a string value):
+        annotation_dict: {0: [cell_type, 
+                certainty, (value chosen from [Low, Medium, High])
+                source, (value chosen from [Article-defined, Knowledge-based])
+                tissue, (value chosen from [Brain, Liver, Kidney, Heart, Lung...])
+                disease, (value chosen from [Healthy, Cancer, Alzheimer, Parkinson...])
+                developmental_stage], (value chosen from [Embryonic, Fetal, Neonatal, Adult...])
+                ...}. "
+                
+        reasoning: {str, reasoning for the re-annotation}
+        
+        <example>
+        <response>
+        annotation_dict: {0: ['T cell', 'High', 'Article-defined', 'Blood', 'Healthy', 'Adult'],
+                            1: ['B cell', 'Medium', 'Knowledge-based', 'Blood', 'Healthy', 'Adult']}
+                            
+        reasoning: The expression of CD3E and CD3D is high in cluster 0, which is a typical marker of T cells. The expression of CD19 is medium high in cluster 1, which is a typical marker of B cells, but not as high as in cluster 2
+        </response>
+        </example>""",
         
         'CHOOSE_MODEL_PROMPT': """You are celltypist, an automated cell type annotation tool to annotate your single-cell data.
         Based on the following models, please choose the model that best fits your data:

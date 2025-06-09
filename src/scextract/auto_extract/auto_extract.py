@@ -151,9 +151,13 @@ subsetting the data to a smaller size.", color='light_red'))
     annotate_prompt = params.get_prompt('ANNOTATION_PROMPT').replace(f"{starting_part}", 
                                                                        f"{starting_part}\n{marker_genes}")
     
+    verbose_annot = config['OPTIONS'].getboolean('ADD_VERBOSE_ANNOTATIONS')
+    if verbose_annot:
+        annotate_prompt = params.get_prompt('ANNOTATION_PROMPT_VERBOSE').replace(f"{starting_part}", 
+                                                                       f"{starting_part}\n{marker_genes}")
+        
     if marker_genes_excel_path is not None:    
-        annotate_prompt = annotate_prompt.replace('{authors_defined_marker_genes}', f"\nThe marker genes for each celltype provided by the author's supplementary \
-        data are:\n{"\n".join(top_k_markers)}\n Remember to assign only standard *cell ontology types* to the clusters\n")
+        annotate_prompt = annotate_prompt.replace('{authors_defined_marker_genes}', "\nThe marker genes for each celltype provided by the author's supplementary data are:\n{}\n Remember to assign only standard *cell ontology types* to the clusters\n".format('\n'.join(top_k_markers)))
     else:
         annotate_prompt = annotate_prompt.replace('{authors_defined_marker_genes}', '')
     
@@ -162,9 +166,9 @@ subsetting the data to a smaller size.", color='light_red'))
     logging.info(colored(annotate_response, color='yellow'))
     annotation_dict = params.parse_annotation_response(annotate_response)
     if not params['reannotation']:
-        adata = annotate(adata, annotation_dict, params, final=True)
+        adata = annotate(adata, annotation_dict, params, final=True, verbose_annot=verbose_annot)
     else:
-        adata = annotate(adata, annotation_dict, params, final=False)
+        adata = annotate(adata, annotation_dict, params, final=False, verbose_annot=verbose_annot)
         logging.info(colored('7. Reannotating clusters', color='cyan', attrs=['bold']))
         query_response = claude_agent.chat(params.get_prompt('REVIEW_PROMPT'))
         logging.info(query_response)
@@ -181,16 +185,20 @@ subsetting the data to a smaller size.", color='light_red'))
                 middle_start = 're-annotate the clusters into cell types using a dictionary format:'
                 reannotate_prompt = params.get_prompt('REANNOTATION_PROMPT').replace(f"{middle_start}", 
                                                                                        f"{middle_start}\n{query_genes_exp_dict_summary}")
+                if verbose_annot:
+                    reannotate_prompt = params.get_prompt('REANNOTATION_PROMPT_VERBOSE').replace(f"{middle_start}", 
+                                                                                       f"{middle_start}\n{query_genes_exp_dict_summary}")
+                
                 reannotate_response = claude_agent.chat(reannotate_prompt, max_tokens=2000)
                 logging.info(reannotate_response)
                 reannotation_dict = params.parse_annotation_response(reannotate_response)
-                adata = annotate(adata, reannotation_dict, params, final=True)
+                adata = annotate(adata, reannotation_dict, params, final=True, verbose_annot=verbose_annot)
             else:
                 logging.info(colored('No genes found in the dataset to query.', color='yellow'))
-                adata = annotate(adata, annotation_dict, params, final=True)
+                adata = annotate(adata, annotation_dict, params, final=True, verbose_annot=verbose_annot)
         else:
             logging.info(colored('No genes to query.', color='yellow'))
-            adata = annotate(adata, annotation_dict, params, final=True)
+            adata = annotate(adata, annotation_dict, params, final=True, verbose_annot=verbose_annot)
 
     if config['OPTIONS'].getboolean('ADD_CELLTYPE_DESCRIPTION'):
         logging.info(colored('Adding cell type description', color='cyan', attrs=['bold']))
