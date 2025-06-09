@@ -68,7 +68,7 @@ def merge_datasets(file_list: List[str],
         gc.collect()
 
     if 'leiden' in adata_all.obs.columns or 'louvain' in adata_all.obs.columns:
-        adata_all.obs = adata_all.obs.drop(columns = ['leiden', 'louvain'])
+        adata_all.obs = adata_all.obs.drop(columns = ['leiden', 'louvain'], errors='ignore')
     del adata_all.var
     return adata_all
 

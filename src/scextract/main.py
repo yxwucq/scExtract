@@ -9,6 +9,7 @@ def main():
         auto_extract(adata_path=args.adata_path,
                         pdf_path=args.pdf_path,
                         output_dir=args.output_dir,
+                        marker_genes_excel_path=args.marker_genes_excel_path,
                         config_path=args.config_path,
                         output_name=args.output_name,
                         output_log=args.output_log,

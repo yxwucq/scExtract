@@ -18,6 +18,7 @@ def parse_args():
     
     auto_extract_parser.add_argument('--adata_path', '-i', type=str, required=True, help='Path to the raw data in AnnData format.')
     auto_extract_parser.add_argument('--pdf_path', '-p', type=str, required=True, help='Path to the PDF file containing the article. should in pdf or txt format.')
+    auto_extract_parser.add_argument('--marker_genes_excel_path', '-m', type=str, help='Path to the Excel file containing the marker genes. should in xlsx or xls format.')
     auto_extract_parser.add_argument('--config_path', '-f', type=str, default='config.ini', help='System config file path.')
     auto_extract_parser.add_argument('--output_dir', '-d', type=str, default='Processed', help='Directory to save the processed data.')
     auto_extract_parser.add_argument('--output_config_pkl', '-c', type=str, default='config.pkl', help='Name of the output config file, storing the config of the extraction and embeddings')

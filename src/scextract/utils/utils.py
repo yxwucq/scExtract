@@ -1,12 +1,18 @@
 import configparser
+import logging
+import os
 import re
+
+import anndata as ad
+import matplotlib.pyplot as plt
 import mygene
 import numpy as np
 import pandas as pd
 import scanpy as sc
-import anndata as ad
-import logging
+import seaborn as sns
+from openpyxl import load_workbook
 from tqdm import tqdm
+
 from ..auto_extract.agent import Claude3, Openai, get_cell_type_embedding_by_llm
 from ..auto_extract.parse_params import Params 
 
@@ -260,6 +266,257 @@ def convert_ensembl_to_symbol(adata: ad.AnnData) -> ad.AnnData:
     logging.info(f"{shape_before[1] - shape_after[1]} Ensembl IDs were not converted.")
     
     return adata_extracted 
+
+def summarise_marker_gene_from_sheet(marker_genes_sheet_content: str, config_path: str = 'config.ini') -> str:
+    config = configparser.ConfigParser()
+    config.read(config_path)
+
+    if 'openai' in config['API']['TYPE']:
+        claude_agent = Openai(pdf_path=None, config_path=config_path)
+    elif 'claude' in config['API']['TYPE']:
+        claude_agent = Claude3(pdf_path=None, config_path=config_path)
+    else:
+        raise ValueError(f"Model {config['API']['MODEL']} not supported.")
+    
+    params = Params(config_path)
+    
+    summary_marker_gene_prompt = params.get_tool_prompt('SUMMARY_MARKER_GENES_FROM_SHEET_PROMPT').replace('{marker_genes_sheet}',
+                                            marker_genes_sheet_content)
+                    
+    marker_gene_response = claude_agent._tool_retrieve(messages=[{"role": "user", "content": summary_marker_gene_prompt}])
+    return marker_gene_response
+
+def extract_top_markers_from_excel(input_path, top_k=10, min_score=0, max_pval=0.05, config_path='config.ini'):
+    """
+    Extract top marker genes for each cell type (Sheet) from an Excel file
+    
+    Parameters:
+    input_path: Path to the Excel file
+    top_k: Number of genes to extract for each cell type
+    min_score: Minimum score threshold (expression change)
+    max_pval: Maximum p-value threshold
+    
+    Returns:
+    Dictionary with cell types (sheet names) as keys and lists of top marker genes as values
+    """
+    # Check if file exists
+    if not os.path.exists(input_path):
+        print(f"Error: Input file {input_path} does not exist")
+        return {}
+        
+    # Check if file is Excel format
+    if not input_path.endswith(('.xlsx', '.xls')):
+        print(f"Error: Input file {input_path} is not an Excel file")
+        return {}
+    
+    # Get all sheets from Excel
+    try:
+        wb = load_workbook(input_path, read_only=True)
+        sheet_names = wb.sheetnames
+    except Exception as e:
+        print(f"Error reading Excel file: {e}")
+        return {}
+    
+    if not sheet_names:
+        print("No sheets found in Excel file")
+        return {}
+    
+    print(f"Found {len(sheet_names)} sheets, extracting top markers...")
+    
+    # Create result dictionary
+    cell_type_markers = {}
+    
+    if len(sheet_names) == 1:
+        print(f"Only one sheet found: {sheet_names[0]}")
+        sheet_content = pd.read_excel(input_path, sheet_name=sheet_names[0]).to_string()
+        marker_gene_response = summarise_marker_gene_from_sheet(sheet_content, config_path)
+        cell_type_markers['direct_parse'] = marker_gene_response
+        return cell_type_markers
+    
+    # Process each sheet
+    for sheet_name in sheet_names:
+        try:
+            # Read sheet data
+            df = pd.read_excel(input_path, sheet_name=sheet_name)
+            
+            if df.empty:
+                print(f"  Skipping empty sheet: {sheet_name}")
+                continue
+            
+            # Auto-identify columns
+            gene_col = identify_gene_column(df)
+            # score_col = identify_score_column(df)
+            # pval_col = identify_pvalue_column(df)
+            
+            if not gene_col:
+                print(f"  Unable to identify gene column in sheet {sheet_name}, skipping")
+                continue
+            
+            # Create a working copy for filtering and sorting
+            filtered_df = df.copy()
+            
+            # # Apply filtering conditions
+            # if score_col and min_score > 0:
+            #     if pd.api.types.is_numeric_dtype(filtered_df[score_col]):
+            #         filtered_df = filtered_df[filtered_df[score_col].abs() >= min_score]
+            
+            # if pval_col and max_pval < 1:
+            #     if pd.api.types.is_numeric_dtype(filtered_df[pval_col]):
+            #         filtered_df = filtered_df[filtered_df[pval_col] <= max_pval]
+            
+            # # Sort by score
+            # if score_col:
+            #     # Sort by absolute value
+            #     filtered_df['abs_score'] = filtered_df[score_col].abs()
+            #     filtered_df = filtered_df.sort_values(by='abs_score', ascending=False)
+            #     if 'abs_score' in filtered_df.columns:
+            #         filtered_df = filtered_df.drop(columns=['abs_score'])
+            
+            # Extract top K genes
+            top_df = filtered_df.head(top_k)
+            
+            if top_df.empty:
+                print(f"  No genes meeting criteria in sheet {sheet_name}")
+                continue
+            
+            # Get gene list
+            top_genes = top_df[gene_col].tolist()
+            
+            # Clean gene names (remove NaN etc.)
+            top_genes = [str(gene).strip() for gene in top_genes if str(gene).strip() and str(gene).lower() != 'nan']
+            
+            # Add to result dictionary
+            cell_type_markers[sheet_name] = top_genes
+            
+            print(f"  {sheet_name}: Extracted {len(top_genes)} markers")
+            
+        except Exception as e:
+            print(f"  Error processing sheet {sheet_name}: {e}")
+    
+    return cell_type_markers
+
+def format_markers_dict(markers_dict):
+    """Format markers dictionary as 'celltype: marker1, marker2, ...' list"""
+    formatted_list = []
+    
+    for cell_type, markers in markers_dict.items():
+        markers_str = ", ".join(markers)
+        formatted_list.append(f"{cell_type}: {markers_str}")
+    
+    return formatted_list
+
+def identify_gene_column(df):
+    """Identify column containing gene IDs/names"""
+    # Common gene column names
+    gene_candidates = ['gene', 'gene_name', 'gene_id', 'symbol', 'genesymbol', 'feature', 'genes']
+    
+    # First check column names
+    for col in df.columns:
+        if col.lower() in gene_candidates or any(gc in col.lower() for gc in gene_candidates):
+            return col
+    
+    # If no explicit column name, check if first column contains gene ID patterns
+    if len(df.columns) > 0:
+        first_col = df.columns[0]
+        sample_values = df[first_col].head(10).astype(str)
+        
+        # Check for common gene ID formats
+        gene_patterns = [
+            r'^ENS[A-Z]*G\d+', # Ensembl gene ID
+            r'^[A-Z0-9]+_[A-Z0-9]+', # Other common formats
+            r'^[A-Z][A-Z0-9]+$' # Gene symbol format (like CD3D, GAPDH etc.)
+        ]
+        
+        for pattern in gene_patterns:
+            if sample_values.str.match(pattern).any():
+                return first_col
+    
+    # Default to first column
+    if len(df.columns) > 0:
+        return df.columns[0]
+    
+    return None
+
+def identify_score_column(df):
+    """Identify column containing expression change scores"""
+    # Common score column names
+    score_candidates = ['avg_log', 'avg_logfc', 'logfc', 'log2fc', 'log2_fc', 
+                        'log2foldchange', 'log2_fold_change', 'fc', 'fold_change',
+                        'score', 'effect', 'expr', 'expression', 'lfc']
+    
+    # Check column names
+    for col in df.columns:
+        col_lower = col.lower()
+        if col_lower in score_candidates or any(sc in col_lower for sc in score_candidates):
+            return col
+    
+    # If no explicit column name, look for numeric columns
+    numeric_cols = [col for col in df.columns if pd.api.types.is_numeric_dtype(df[col])]
+    
+    # Exclude potential p-value columns
+    pval_patterns = ['p', 'pval', 'p_val', 'p.val', 'padj', 'p_adj', 'fdr']
+    numeric_cols = [col for col in numeric_cols if not any(p in col.lower() for p in pval_patterns)]
+    
+    if numeric_cols:
+        # Return first non-p-value numeric column
+        return numeric_cols[0]
+    
+    return None
+
+def identify_pvalue_column(df):
+    """Identify column containing p-values"""
+    # Common p-value column names
+    pval_candidates = ['padj', 'p_adj', 'adj_pval', 'p.val.adj', 'fdr', 'q_value', 'qval', 
+                       'pval', 'p_val', 'p.val', 'p-value', 'p_value', 'p.value']
+    
+    # Prioritize adjusted p-value columns
+    adj_pval_candidates = ['padj', 'p_adj', 'adj_pval', 'p.val.adj', 'fdr', 'q_value', 'qval']
+    
+    # First try to find adjusted p-value
+    for col in df.columns:
+        col_lower = col.lower()
+        if col_lower in adj_pval_candidates or any(pc in col_lower for pc in adj_pval_candidates):
+            return col
+    
+    # Then try to find unadjusted p-value
+    for col in df.columns:
+        col_lower = col.lower()
+        if col_lower in pval_candidates or any(pc in col_lower for pc in pval_candidates):
+            return col
+    
+    # If no explicit column name, look for potential p-value columns (usually very small values)
+    numeric_cols = [col for col in df.columns if pd.api.types.is_numeric_dtype(df[col])]
+    for col in numeric_cols:
+        non_zero_values = df[col][df[col] != 0]
+        if not non_zero_values.empty:
+            if non_zero_values.max() <= 1 and non_zero_values.min() >= 0:
+                # Check for very small values, which typically indicate p-values
+                if non_zero_values.min() < 0.1:
+                    return col
+    
+    return None
+
+def get_top_markers(input_path, top_k=10, min_score=0, max_pval=0.05, config_path='config.ini'):
+    """
+    Extract and return top marker genes for each cell type, formatted as 'celltype: marker list'
+    
+    Parameters:
+    input_path: Path to Excel file
+    top_k: Number of genes to extract for each cell type, default is 10
+    min_score: Minimum score threshold, default is 0
+    max_pval: Maximum p-value threshold, default is 0.05
+    
+    Returns:
+    List of strings, each formatted as 'celltype: marker1, marker2, ...'
+    """
+    # Extract markers dictionary
+    markers_dict = extract_top_markers_from_excel(input_path, top_k, min_score, max_pval, config_path)
+    
+    if 'direct_parse' in markers_dict.keys():
+        return [markers_dict['direct_parse']]
+    
+    # Format as required list format
+    return format_markers_dict(markers_dict)
 
 if __name__ == '__main__':
     adata = sc.read_h5ad('/home/wu/datb1/AutoExtractSingleCell/sample2/raw_data/raw_data.h5ad')

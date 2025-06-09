@@ -129,7 +129,7 @@ class Prompts:
         reasoning: {str, reasoning for the clustering parameters}""",
         
         'ANNOTATION_PROMPT': """This is the output of the top 10 marker genes for each cluster:
-        
+        {authors_defined_marker_genes}
         Based on gene expression and the detailed discussion from the article, annotate these clusters into cell types using a dictionary format.
         Please provide the 'cell type', 'certainty', 'source' and reasoning for each cluster.
         You may annotate different groups with the same cell type. You should try to assign a **cell ontology** label to each cluster (e.g. B cell, T cell, etc.),
@@ -251,6 +251,16 @@ class Prompts:
         Please indicate the expression level of each gene in cluster_i in order, and summarize their expression states, focusing on specific outlier expressions. 
         For example: geneA: highest expression in cluster 0, not expressed in other clusters. geneB: not expressed in cluster 4, relatively high expression in cluster 2. 
         Please directly output your summary by gene. """,
+        
+        'SUMMARY_MARKER_GENES_FROM_SHEET_PROMPT': """This is the marker genes data from Excel sheet provided by the authors
+        
+        {marker_genes_sheet}
+        
+        Please summarize the marker genes in the following format:
+        celltype1: marker1, marker2, ...
+        celltype2: marker1, marker2, ...
+        ...
+        """,
         
         'GPTCELLTYPE_ANNOTATION_PROMPT': """Identify cell types of {tissuename} cells using the following markers separately for each\n row. Only provide the cell type name. Do not show numbers before the name.\n Some can be a mixture of multiple cell types. \n""",
         

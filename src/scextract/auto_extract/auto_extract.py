@@ -17,12 +17,13 @@ from .annotation import get_marker_genes, annotate, query_datasets, simple_annot
 from .parse_params import Params 
 
 import configparser
-from ..utils.utils import convert_ensembl_to_symbol
+from ..utils.utils import convert_ensembl_to_symbol, get_top_markers
 
 from .. import __version__
 
 def auto_extract(adata_path: str,
-                 pdf_path: str, 
+                 pdf_path: str,
+                 marker_genes_excel_path: str,
                  output_dir: str,
                  config_path: str = 'config.ini',
                  output_name: str = 'processed.h5ad',
@@ -140,9 +141,21 @@ subsetting the data to a smaller size.", color='light_red'))
         no_context_annotation_dict = params.parse_annotation_response(benchmark_no_context_summary, simple_annotation=True)
         adata = simple_annotate(adata, no_context_annotation_dict, params, benchmark_no_context_key)
     
+    if marker_genes_excel_path is not None:
+        logging.info(colored('Loading marker genes from file', color='cyan', attrs=['bold']))
+        top_k_markers = get_top_markers(marker_genes_excel_path, config_path=config_path)
+        logging.info(colored('Top marker genes for each cluster:', color='yellow'))
+        logging.info(colored('\n'.join(top_k_markers), color='yellow'))
+    
     starting_part = 'This is the output of the top 10 marker genes for each cluster:'
     annotate_prompt = params.get_prompt('ANNOTATION_PROMPT').replace(f"{starting_part}", 
                                                                        f"{starting_part}\n{marker_genes}")
+    
+    if marker_genes_excel_path is not None:    
+        annotate_prompt = annotate_prompt.replace('{authors_defined_marker_genes}', f"\nThe marker genes for each celltype provided by the author's supplementary \
+        data are:\n{"\n".join(top_k_markers)}\n Remember to assign only standard *cell ontology types* to the clusters\n")
+    else:
+        annotate_prompt = annotate_prompt.replace('{authors_defined_marker_genes}', '')
     
     logging.info(colored('6. Annotating clusters', color='cyan', attrs=['bold']))
     annotate_response = claude_agent.chat(annotate_prompt, max_tokens=1500)
