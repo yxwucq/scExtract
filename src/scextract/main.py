@@ -43,8 +43,7 @@ def main():
         add_singler_annotation(adata_path=args.adata_path,
                                output_path=args.output_path,
                                ref_data=args.ref_data,
-                               ref_features=args.ref_features,
-                               ref_labels=args.ref_labels,
+                               database_version=args.database_version,
                                key_added=args.key_added,
                                cache_dir=args.cache_dir)
     elif args.subcommand == 'add_celltypist_annotation':

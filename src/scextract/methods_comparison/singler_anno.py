@@ -4,10 +4,12 @@
 import anndata as ad
 import h5py
 import numpy as np
+import scipy
 from scipy.sparse import csr_matrix
 from pathlib import Path
 from typing import List
 import os
+import celldex
 import singler
 import singlecellexperiment as sce
 
@@ -55,9 +57,8 @@ def write_10X_h5(adata: ad.AnnData,
     grp.create_dataset("shape", data=np.array(list(adata.X.shape)[::-1], dtype=f'<i{int_max(adata.X.shape)}'))
 
 def singler_annotation(h5file_path: str,
-                       ref_data: str = "HumanPrimaryCellAtlasData",
-                       ref_features: str = "symbol",
-                       ref_labels: str = "main",
+                       ref_data: str = "hpca",
+                       database_version: str = "2024-02-26",
                        cache_dir: str = "_cache",
                        ) -> List[str]:
     
@@ -68,16 +69,26 @@ def singler_annotation(h5file_path: str,
     mat = data.assay("counts")
     features = [str(x) for x in data.row_data["name"]]
 
+    mat_csr = scipy.sparse.csr_matrix(mat)
+
+    for i in range(3):
+        try:
+            ref_data_h5 = celldex.fetch_reference(ref_data, database_version, realize_assays=True)
+            print(f"Fetched reference data {ref_data} successfully.")
+            break
+        except Exception as e:
+            if i == 2:
+                raise ValueError(f"Failed to fetch reference data {ref_data} with error: {e}")
+
     # add retry if singler fails
     for i in range(3):
         try:
             results = singler.annotate_single(
-                mat,
-                features,
-                ref_data = ref_data,
-                ref_features = ref_features,
-                ref_labels = ref_labels,
-                cache_dir = cache_dir,
+                test_data = mat_csr,
+                test_features = features,
+                ref_data = ref_data_h5,
+                ref_labels = ref_data_h5.get_column_data().column("label.main"),
+                # cache_dir = cache_dir,
                 num_threads = 4,
             )
             break
@@ -89,9 +100,8 @@ def singler_annotation(h5file_path: str,
 
 def add_singler_annotation(adata_path: str,
                            h5file_path: str = '_tmpfile.h5',
-                           ref_data: str = "HumanPrimaryCellAtlas",
-                           ref_features: str = "symbol",
-                           ref_labels: str = "main",
+                           ref_data: str = "hpca",
+                           database_version: str = "2024-02-26",
                            cache_dir: str = "_cache",
                            key_added: str = "singler_annotation",
                            output_path: str = None,
@@ -109,8 +119,7 @@ def add_singler_annotation(adata_path: str,
     
     singler_anno_results = singler_annotation(h5file_path, 
                                               ref_data,
-                                              ref_features, 
-                                              ref_labels, 
+                                              database_version,
                                               cache_dir)
     
     os.remove(h5file_path)

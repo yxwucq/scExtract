@@ -61,9 +61,8 @@ def parse_args():
     
     add_singler_annotation.add_argument('--adata_path', '-i', type=str, required=True, help='Path to the processed data in AnnData format.')
     add_singler_annotation.add_argument('--output_path', '-o', type=str, help='Path to save the output file. If not specified, the input file will be overwritten.')
-    add_singler_annotation.add_argument('--ref_data', '-d', type=str, default='HumanPrimaryCellAtlasData', help='Reference data to use for annotation.')
-    add_singler_annotation.add_argument('--ref_features', '-f', type=str, default='symbol', help='Reference features to use for annotation.')
-    add_singler_annotation.add_argument('--ref_labels', '-l', type=str, default='main', help='Reference labels to use for annotation.')
+    add_singler_annotation.add_argument('--ref_data', '-d', type=str, default='hpca', help='Reference data to use for annotation. See celldex for available references.')
+    add_singler_annotation.add_argument('--database_version', '-v', type=str, default='2024-02-26', help='Version of the reference database to use for annotation.')
     add_singler_annotation.add_argument('--cache_dir', '-c', type=str, default='_cache', help='Directory to save the cache files.')
     add_singler_annotation.add_argument('--key_added', '-k', type=str, default='singler_annotation', help='Key to save the annotation results in adata.obs.')
 

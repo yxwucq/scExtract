@@ -31,7 +31,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-external = ["singler>=0.1.2",
+external = ["singler>=0.4.1",
+    "celldex",
     "singlecellexperiment>=0.4.4",
     "celltypist",
 ]
