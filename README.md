@@ -118,3 +118,8 @@ Muto, Y., Wilson, P.C., Ledru, N. et al. Single cell transcriptional and chromat
 `Cell_type` is author-defined cell type, `scExtract` is cell type extracted from scExtract, `no_context_anno` is cell type extracted without context information, `singler` is cell type from singleR. `Tissue`, `Certainty` are from scExtract.
 
 ![sample8](assests/sample8_benchmark.png)
+
+## Citation
+If you use scExtract in your research, please cite:
+
+> **Wu, Y., Tang, F.** scExtract: leveraging large language models for fully automated single-cell RNA-seq data annotation and prior-informed multi-dataset integration. *Genome Biology* **26**, 174 (2025). https://doi.org/10.1186/s13059-025-03639-x

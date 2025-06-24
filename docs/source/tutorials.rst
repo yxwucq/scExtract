@@ -29,7 +29,7 @@ title, abstract, cell count per dataset, dataset location, and other details. Me
 Raw data download and processing
 --------------------------------
 
-Next, we need to manually download each dataset. We can exclude datasets that are difficult to access or require mapping, and it's recommended to focus on GSE datasets only.
+Next, we need to manually download each dataset. We can exclude datasets that are difficult to access or require mapping, and it's recommended to focus on GSE datasets only. If you want to avoid the manual data preparation process, you can check scBaseCount (https://github.com/ArcInstitute/arc-virtual-cell-atlas) for formatted datasets. This package uses LLM agents to automatically format single-cell RNA datasets, which is like an upstream version of scExtract.
 
 Using :code:`sample0` as an example, after downloading, place it in the :code:`sample0/raw_data directory`. Then use :code:`sc.read_text()` directly to read the dataset.
 
