@@ -81,7 +81,7 @@ def get_metadata_in_pdf(pdf_list: List[str],
         
         if initiation_samples:
             os.makedirs(os.path.join(output_dir, f"sample{i}/raw_data"), exist_ok=True)
-            os.system(f"cp {pdf_path} {os.path.join(output_dir, f"sample{i}/raw_data", f"sample{i}.pdf")}")
+            os.system(f'cp {pdf_path} {os.path.join(output_dir, f"sample{i}/raw_data", f"sample{i}.pdf")}')
         
     metadata = pd.DataFrame({'sample_number': sample_numbers,
                              'article_title': article_titles,
